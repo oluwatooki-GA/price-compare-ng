@@ -1,6 +1,7 @@
 import type { ComparisonResult } from '../../types';
 import { ProductCard } from './ProductCard';
 import { BestValueBadge } from './BestValueBadge';
+import { Bookmark, Loader2 } from 'lucide-react';
 
 interface ComparisonCardProps {
   comparison: ComparisonResult;
@@ -36,9 +37,19 @@ export const ComparisonCard = ({ comparison, onSave, isSaving }: ComparisonCardP
           <button
             onClick={onSave}
             disabled={isSaving}
-            className="px-6 py-3 bg-[#1edc6a] text-[#0A0A0A] rounded-lg font-bold hover:brightness-110 disabled:opacity-50 transition-all"
+            className="flex items-center gap-2 px-6 py-3 bg-[#1edc6a] text-[#0A0A0A] rounded-lg font-bold hover:brightness-110 disabled:opacity-50 transition-all"
           >
-            {isSaving ? 'Saving...' : 'Save Comparison'}
+            {isSaving ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <Bookmark className="w-5 h-5" />
+                Save Comparison
+              </>
+            )}
           </button>
         )}
       </div>

@@ -2,6 +2,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Button } from '../common/Button';
+import { Search as SearchIcon, Loader2 } from 'lucide-react';
 
 const keywordSchema = z.object({
   query: z.string().min(2, 'Search query must be at least 2 characters'),
@@ -21,7 +22,7 @@ interface SearchBarProps {
 
 export const SearchBar = ({ searchType, onSearch, isLoading }: SearchBarProps) => {
   const schema = searchType === 'keyword' ? keywordSchema : urlSchema;
-  
+
   const {
     register,
     handleSubmit,
@@ -52,8 +53,13 @@ export const SearchBar = ({ searchType, onSearch, isLoading }: SearchBarProps) =
             <p className="mt-1 text-sm text-red-600">{errors.query.message}</p>
           )}
         </div>
-        <Button type="submit" isLoading={isLoading} className="px-8">
-          Search
+        <Button type="submit" isLoading={isLoading} className="px-8 gap-2">
+          {isLoading ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <SearchIcon className="w-4 h-4" />
+          )}
+          <span>Search</span>
         </Button>
       </div>
     </form>

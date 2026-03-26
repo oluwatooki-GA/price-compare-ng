@@ -6,6 +6,7 @@ import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { ErrorMessage } from '../components/common/ErrorMessage';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '../components/ui/button';
+import { ArrowLeft, Trash2, Search, BookmarkX, ChevronRight } from 'lucide-react';
 
 // ── Group saved comparisons by their searchQuery ──────────────────────────────
 
@@ -116,8 +117,9 @@ const GroupCard = ({
               from ₦{lowestPrice.toLocaleString()}
             </div>
           )}
-          <div className="text-slate-600 text-xs mt-1 group-hover:text-slate-400 transition-colors">
-            View all →
+          <div className="text-slate-600 text-xs mt-1 group-hover:text-slate-400 transition-colors flex items-center justify-end gap-1">
+            View all
+            <ChevronRight className="w-4 h-4" />
           </div>
         </div>
       </div>
@@ -161,9 +163,10 @@ const GroupDetail = ({
     >
       {/* Back + heading */}
       <motion.div whileHover={{ x: -5 }} whileTap={{ y: 1 }} className="inline-block mb-6">
-        <Button onClick={onBack} variant="ghost" className="text-[#1edc6a] hover:text-[#1edc6a] -ml-4 cursor-pointer">
-          ← Back to saved
-        </Button>
+        <button onClick={onBack} className="flex items-center gap-2 text-[#1edc6a] hover:text-[#17c55e] transition-colors -ml-4 cursor-pointer">
+          <ArrowLeft className="w-5 h-5" />
+          Back to saved
+        </button>
       </motion.div>
 
       <h2 className="text-2xl font-bold text-white mb-1 line-clamp-2">
@@ -194,10 +197,7 @@ const GroupDetail = ({
               title="Remove from saved"
               className="absolute top-3 left-3 w-7 h-7 flex items-center justify-center rounded-full bg-[#0A0A0A]/80 border border-[#333] text-slate-500 hover:text-red-400 hover:border-red-400/40 transition-all disabled:opacity-40 backdrop-blur-sm"
             >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
+              <Trash2 className="w-3.5 h-3.5" />
             </button>
           </motion.div>
         ))}
@@ -287,13 +287,20 @@ export const SavedComparisons = () => {
 
             {groups.length === 0 ? (
               <div className="text-center py-20">
-                <div className="text-7xl mb-6">📋</div>
+                <div className="flex justify-center mb-6">
+                  <div className="w-20 h-20 rounded-full bg-[#262626] flex items-center justify-center">
+                    <BookmarkX className="w-10 h-10 text-slate-600" />
+                  </div>
+                </div>
                 <h2 className="text-2xl font-bold text-white mb-3">No saved comparisons yet</h2>
                 <p className="text-slate-400 mb-8">
                   Save products from search results to compare them here
                 </p>
                 <a href="/">
-                  <Button size="lg">Start Searching</Button>
+                  <Button size="lg" className="gap-2">
+                    <Search className="w-5 h-5" />
+                    Start Searching
+                  </Button>
                 </a>
               </div>
             ) : (
