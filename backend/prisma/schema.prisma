@@ -1,0 +1,45 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               Int                @id @default(autoincrement())
+  email            String             @unique
+  hashedPassword   String
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  savedComparisons SavedComparison[]
+
+  @@index([email])
+}
+
+model PriceHistory {
+  id         Int      @id @default(autoincrement())
+  productUrl String
+  platform   String
+  price      Float
+  currency   String
+  recordedAt DateTime @default(now())
+
+  @@unique([productUrl, platform])
+  @@index([productUrl, platform, recordedAt])
+}
+
+model SavedComparison {
+  id             Int      @id @default(autoincrement())
+  userId         Int
+  searchQuery    String
+  searchType     String
+  comparisonData String
+  productUrl     String
+  createdAt      DateTime @default(now())
+  user           User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, productUrl])
+  @@index([userId])
+}
