@@ -20,13 +20,13 @@ A price comparison web application designed to help Nigerian consumers efficient
 ## Technology Stack
 
 ### Backend
-- **Framework**: FastAPI
-- **Database**: PostgreSQL
+- **Framework**: Express.js + TypeScript
+- **Database**: PostgreSQL with Prisma ORM
 - **Cache**: Redis
-- **Authentication**: JWT (python-jose, bcrypt)
-- **Web Scraping**: httpx, BeautifulSoup4
-- **Rate Limiting**: slowapi
-- **Migrations**: Alembic
+- **Authentication**: JWT (jsonwebtoken, bcrypt)
+- **Web Scraping**: axios, cheerio
+- **Rate Limiting**: express-rate-limit with Redis store
+- **Validation**: Zod
 
 ### Frontend
 - **Framework**: React 18 + TypeScript
@@ -45,20 +45,21 @@ The backend follows a modular, feature-based architecture:
 
 ```
 backend/
-├── app/
-│   ├── core/           # Configuration, security, dependencies
-│   ├── shared/         # Shared models, exceptions, utilities
-│   ├── auth/           # Authentication routes and services
-│   ├── users/          # User management
-│   ├── search/         # Search functionality
-│   ├── comparisons/    # Comparison persistence
+├── src/
+│   ├── config/         # Configuration, security, database
+│   ├── shared/         # Shared types, errors, utilities
+│   ├── middleware/     # Express middleware
+│   ├── api/v1/
+│   │   ├── auth/       # Authentication routes and services
+│   │   ├── search/     # Search functionality
+│   │   └── comparisons/# Comparison persistence
 │   └── scrapers/       # Platform scraper adapters
 ```
 
 **Key Patterns**:
 - **Separation of Concerns**: Routes handle HTTP, services contain business logic
 - **Adapter Pattern**: Platform scrapers implement a common interface
-- **Dependency Injection**: Services injected via FastAPI's Depends mechanism
+- **Service Layer**: Business logic separated from HTTP concerns
 
 ### Frontend Architecture
 
@@ -78,8 +79,7 @@ frontend/src/
 
 ### Prerequisites
 
-- Python 3.9+
-- Node.js 18+
+- Node.js 20+
 - PostgreSQL 13+
 - Redis 6+
 
@@ -90,39 +90,38 @@ frontend/src/
    cd backend
    ```
 
-2. Create and activate a virtual environment:
+2. Install dependencies:
    ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   npm install
    ```
 
-3. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. Create a `.env` file based on `.env.example`:
+3. Create a `.env` file based on `.env.example`:
    ```bash
    cp .env.example .env
    ```
 
-5. Update the `.env` file with your configuration:
+4. Update the `.env` file with your configuration:
    - Set `DATABASE_URL` to your PostgreSQL connection string
    - Set `JWT_SECRET` to a secure random string (minimum 32 characters)
    - Set `REDIS_URL` to your Redis connection string
    - Update `CORS_ORIGINS` if needed
 
-6. Run database migrations:
+5. Run database migrations:
    ```bash
-   alembic upgrade head
+   npx prisma migrate dev
+   ```
+
+6. Generate Prisma Client:
+   ```bash
+   npx prisma generate
    ```
 
 7. Start the development server:
    ```bash
-   uvicorn app.main:app --reload
+   npm run dev
    ```
 
-The API will be available at `http://localhost:8000`
+The API will be available at `http://localhost:3000`
 
 ### Frontend Setup
 
@@ -142,7 +141,7 @@ The API will be available at `http://localhost:8000`
    ```
 
 4. Update the `.env` file:
-   - Set `VITE_API_BASE_URL` to your backend API URL (default: `http://localhost:8000`)
+   - Set `VITE_API_BASE_URL` to your backend API URL (default: `http://localhost:3000/api/v1`)
 
 5. Start the development server:
    ```bash
@@ -171,8 +170,8 @@ The application will be available at `http://localhost:5173`
 
 ### Code Style
 
-- **Backend**: Follow PEP 8 guidelines
-- **Frontend**: Follow Airbnb JavaScript/TypeScript style guide
+- **Backend**: Follow TypeScript best practices
+- **Frontend**: Follow TypeScript and React best practices
 - Use meaningful variable and function names
 - Write clear comments for complex logic
 - Keep functions small and focused
@@ -186,11 +185,19 @@ The application will be available at `http://localhost:5173`
 
 ## API Documentation
 
-Once the backend is running, visit `http://localhost:8000/docs` for interactive API documentation (Swagger UI).
+Once the backend is running, API endpoints are available at `http://localhost:3000/api/v1`. Key endpoints include:
+- `POST /auth/register` - User registration
+- `POST /auth/login` - User login
+- `GET /auth/me` - Get current user
+- `POST /search/keyword` - Search by keyword
+- `POST /search/url` - Search by URL
+- `GET /comparisons` - Get saved comparisons
+- `POST /comparisons` - Save a comparison
+- `DELETE /comparisons/:id` - Delete a comparison
 
 ## Project Status
 
-This project is currently in active development. See the implementation plan in `.kiro/specs/price-compare-ng/tasks.md` for detailed progress.
+This project is currently in active development.
 
 ## License
 
