@@ -1,0 +1,247 @@
+// import { useState } from 'react'; // TODO: Re-enable when keyword search is implemented
+// import { useNavigate } from 'react-router-dom'; // TODO: Re-enable when keyword search is implemented
+import { useSearch } from '../hooks/useSearch';
+import { motion } from 'framer-motion';
+import { Button } from '../components/ui/button';
+import { Card, CardContent } from '../components/ui/card';
+import { UrlPrefillForm } from '../components/search/UrlPrefillForm';
+
+export const Home = () => {
+  // const [keywordQuery, setKeywordQuery] = useState(''); // TODO: Re-enable when keyword search is implemented
+  const { searchByKeyword } = useSearch();
+  // const navigate = useNavigate(); // TODO: Re-enable when keyword search is implemented
+
+  // const handleKeywordSearch = (e: React.FormEvent) => { // TODO: Re-enable when keyword search is implemented
+  //   e.preventDefault();
+  //   if (!keywordQuery.trim()) return;
+  //   searchByKeyword.mutate({ keyword: keywordQuery }, {
+  //     onSuccess: (data) => {
+  //       navigate('/search', { state: { results: data, query: keywordQuery, type: 'keyword' } });
+  //     },
+  //   });
+  // };
+
+  // const isLoading = searchByKeyword.isPending; // TODO: Re-enable when keyword search is implemented
+
+  return (
+      <div className="min-h-screen bg-[#0A0A0A] text-white">
+        {/* Hero Section */}
+        <section className="relative overflow-hidden pt-20 pb-32">
+          <div className="max-w-7xl mx-auto px-8 md:px-12 lg:px-16 relative z-10">
+            <motion.div
+                className="max-w-3xl"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+            >
+              <motion.h1
+                  className="text-5xl md:text-7xl font-black leading-[1.1] mb-6 tracking-tight"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: 0.1 }}
+              >
+                Smartest way to <br/><span className="text-[#1edc6a]">shop in Nigeria.</span>
+              </motion.h1>
+              <motion.p
+                  className="text-lg md:text-xl text-slate-400 mb-12 leading-relaxed max-w-2xl"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: 0.2 }}
+              >
+                Instantly compare prices across Jumia and Konga. Save money with every click. No more switching tabs—get the best deals in seconds.
+              </motion.p>
+            </motion.div>
+
+            {/* Action Hub */}
+            <div className="grid grid-cols-1 lg:grid-cols-1 gap-8 items-start">
+              {/* Traditional Search */}
+              {/*<motion.div*/}
+              {/*    initial={{ opacity: 0, x: -20 }}*/}
+              {/*    animate={{ opacity: 1, x: 0 }}*/}
+              {/*    transition={{ duration: 0.6, delay: 0.3 }}*/}
+              {/*    whileHover={{ scale: 1.02 }}*/}
+              {/*>*/}
+              {/*  <Card>*/}
+              {/*    <CardContent className="p-10">*/}
+              {/*      <h3 className="text-sm font-bold uppercase tracking-widest text-[#1edc6a] mb-6 flex items-center gap-2">*/}
+              {/*        <span>🔍</span>*/}
+              {/*        Quick Product Search*/}
+              {/*      </h3>*/}
+              {/*      <form onSubmit={handleKeywordSearch} className="flex flex-col gap-4">*/}
+              {/*        <div className="relative group">*/}
+              {/*          <input*/}
+              {/*              value={keywordQuery}*/}
+              {/*              onChange={(e) => setKeywordQuery(e.target.value)}*/}
+              {/*              className="w-full h-16 bg-[#0A0A0A]/50 border-none focus:ring-2 focus:ring-[#1edc6a] rounded-lg px-6 text-lg transition-all placeholder:text-slate-500 text-white"*/}
+              {/*              placeholder="Search for a product (e.g. iPhone 15)"*/}
+              {/*              type="text"*/}
+              {/*              disabled={isLoading}*/}
+              {/*          />*/}
+              {/*        </div>*/}
+              {/*        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>*/}
+              {/*          <Button*/}
+              {/*              type="submit"*/}
+              {/*              disabled={isLoading}*/}
+              {/*              size="lg"*/}
+              {/*              className="w-full"*/}
+              {/*          >*/}
+              {/*            {isLoading ? 'Searching...' : 'Search Marketplace'}*/}
+              {/*          </Button>*/}
+              {/*        </motion.div>*/}
+              {/*      </form>*/}
+              {/*      <p className="mt-4 text-xs text-slate-500 text-center uppercase tracking-tighter">*/}
+              {/*        Compare over 100,000+ listings live*/}
+              {/*      </p>*/}
+              {/*    </CardContent>*/}
+              {/*  </Card>*/}
+              {/*</motion.div>*/}
+
+              {/* Link Comparison — scrapes URL and prefills search form */}
+              <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.6, delay: 0.4 }}
+                  className="cursor-pointer"
+              >
+                <UrlPrefillForm />
+              </motion.div>
+            </div>
+
+            {/* Error Messages */}
+            {searchByKeyword.isError && (
+                <motion.div
+                    className="mt-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg"
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                >
+                  <p className="text-red-400 text-center">
+                    Search failed. Please try again or check your connection.
+                  </p>
+                </motion.div>
+            )}
+          </div>
+
+          {/* Background Decoration */}
+          <motion.div
+              className="absolute top-0 right-0 -z-10 w-1/2 h-full bg-gradient-to-l from-[#1edc6a]/5 to-transparent blur-3xl"
+              animate={{
+                scale: [1, 1.1, 1],
+                opacity: [0.3, 0.5, 0.3]
+              }}
+              transition={{
+                duration: 8,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+          />
+          <motion.div
+              className="absolute bottom-0 left-0 -z-10 w-1/3 h-1/2 bg-gradient-to-tr from-[#1edc6a]/10 to-transparent blur-3xl opacity-50"
+              animate={{
+                scale: [1, 1.2, 1],
+                opacity: [0.3, 0.6, 0.3]
+              }}
+              transition={{
+                duration: 10,
+                repeat: Infinity,
+                ease: "easeInOut",
+                delay: 1
+              }}
+          />
+        </section>
+
+        {/* Features Section */}
+        <section className="py-24 bg-[#0A0A0A] border-y border-[#262626]">
+          <div className="max-w-7xl mx-auto px-8 md:px-12 lg:px-16">
+            <motion.div
+                className="flex flex-col items-center text-center mb-16"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6 }}
+            >
+              <h2 className="text-3xl md:text-5xl font-black mb-4">
+                Engineered for <span className="text-[#1edc6a]">Savings</span>
+              </h2>
+              <p className="text-slate-400 max-w-2xl text-lg">
+                PriceCompare NG helps you navigate the Nigerian e-commerce landscape with precision-engineered data tools.
+              </p>
+            </motion.div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {[
+                { icon: '⇄', title: 'Price Comparison', desc: 'See live prices from top retailers side-by-side to find the absolute best deal available in real-time.' },
+                { icon: '★', title: 'Rating Analysis', desc: 'Aggregated reviews from multiple sources across the Nigerian web to ensure product quality and vendor trust.' },
+                { icon: '📈', title: 'Price History', desc: 'Track price trends over days and months to avoid artificial "sales" and buy at the lowest possible historical point.' }
+              ].map((feature, index) => (
+                  <motion.div
+                      key={index}
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.6, delay: index * 0.1 }}
+                      whileHover={{ y: -5 }}
+                  >
+                    <Card className="h-full hover:border-[#1edc6a]/50 transition-all group">
+                      <CardContent className="p-10">
+                        <motion.div
+                            className="size-14 rounded-xl bg-[#1edc6a]/10 flex items-center justify-center text-[#1edc6a] mb-8 group-hover:brightness-110 transition-all cursor-pointer"
+                            whileHover={{ rotate: 360 }}
+                            transition={{ duration: 0.6 }}
+                        >
+                          <span className="text-3xl">{feature.icon}</span>
+                        </motion.div>
+                        <h3 className="text-xl font-bold mb-4 text-white">{feature.title}</h3>
+                        <p className="text-slate-400 leading-relaxed">{feature.desc}</p>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* CTA Section */}
+        <section className="py-24">
+          <div className="max-w-7xl mx-auto px-8 md:px-12 lg:px-16">
+            <motion.div
+                className="relative bg-[#1edc6a] rounded-[2rem] p-12 overflow-hidden flex flex-col md:flex-row items-center justify-between"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6 }}
+            >
+              <div className="relative z-10 max-w-xl text-center md:text-left">
+                <h2 className="text-4xl md:text-5xl font-black text-[#0A0A0A] mb-6">Never overpay again.</h2>
+                <p className="text-[#0A0A0A]/80 text-lg font-medium mb-10">
+                  Join over 50,000 shoppers saving an average of ₦15,000 monthly using our smart comparison tools.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
+                  <motion.div whileTap={{ y: 1 }}>
+                    <Button
+                        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                        size="lg"
+                        className="bg-[#0A0A0A] text-white hover:bg-[#161616] border-2 border-[#0A0A0A] cursor-pointer"
+                    >
+                      <span>🛒</span>
+                      Start Comparing Now
+                    </Button>
+                  </motion.div>
+                </div>
+              </div>
+              <motion.div
+                  className="mt-12 md:mt-0 relative h-64 w-64 md:h-80 md:w-80 bg-[#0A0A0A]/10 rounded-full flex items-center justify-center"
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+              >
+                <span className="text-[10rem] text-[#0A0A0A]/20">📊</span>
+              </motion.div>
+              <motion.div
+                  className="absolute -right-20 -top-20 size-80 bg-white/10 rounded-full blur-3xl"
+                  animate={{ scale: [1, 1.2, 1] }}
+                  transition={{ duration: 5, repeat: Infinity }}
+              />
+            </motion.div>
+          </div>
+        </section>
+      </div>
+  );
+};
