@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>PriceCompare NG | Smartest way to shop in Nigeria</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1edc6a",
+                        "background-light": "#f6f8f7",
+                        "background-dark": "#0A0A0A",
+                        "card-dark": "#161616",
+                        "border-dark": "#262626",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .glass-nav {
+            background: rgba(10, 10, 10, 0.8);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 antialiased selection:bg-primary/30">
+<!-- Navigation -->
+<nav class="fixed top-0 w-full z-50 glass-nav">
+<div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+<div class="flex items-center gap-2">
+<div class="size-8 bg-primary rounded-lg flex items-center justify-center text-background-dark">
+<span class="material-symbols-outlined font-bold">payments</span>
+</div>
+<span class="text-xl font-extrabold tracking-tight dark:text-white uppercase">PriceCompare <span class="text-primary">NG</span></span>
+</div>
+<div class="hidden md:flex items-center gap-10">
+<a class="text-sm font-medium hover:text-primary transition-colors" href="#">Home</a>
+<a class="text-sm font-medium hover:text-primary transition-colors" href="#">About</a>
+<a class="text-sm font-medium hover:text-primary transition-colors" href="#">Features</a>
+<a class="text-sm font-medium hover:text-primary transition-colors" href="#">Partners</a>
+</div>
+<div class="flex items-center gap-4">
+<button class="bg-primary text-background-dark px-6 py-2.5 rounded-lg text-sm font-bold hover:brightness-110 transition-all">
+                    Get Started
+                </button>
+</div>
+</div>
+</nav>
+<main class="pt-20">
+<!-- Hero Section -->
+<section class="relative overflow-hidden pt-20 pb-32">
+<div class="max-w-7xl mx-auto px-6 relative z-10">
+<div class="max-w-3xl">
+<h1 class="text-5xl md:text-7xl font-black leading-[1.1] mb-6 tracking-tight dark:text-white">
+                        Smartest way to <br/><span class="text-primary">shop in Nigeria.</span>
+</h1>
+<p class="text-lg md:text-xl text-slate-600 dark:text-slate-400 mb-12 leading-relaxed max-w-2xl">
+                        Instantly compare prices across Jumia and Konga. Save money with every click. No more switching tabs—get the best deals in seconds.
+                    </p>
+</div>
+<!-- Action Hub -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+<!-- Traditional Search -->
+<div class="bg-white dark:bg-card-dark p-8 rounded-xl border border-slate-200 dark:border-border-dark shadow-2xl">
+<h3 class="text-sm font-bold uppercase tracking-widest text-primary mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">search</span>
+                            Quick Product Search
+                        </h3>
+<div class="flex flex-col gap-4">
+<div class="relative group">
+<input class="w-full h-16 bg-slate-100 dark:bg-background-dark/50 border-none focus:ring-2 focus:ring-primary rounded-lg px-6 text-lg transition-all placeholder:text-slate-500" placeholder="Search for a product (e.g. iPhone 15)" type="text"/>
+</div>
+<button class="w-full h-14 bg-primary text-background-dark rounded-lg font-bold text-lg flex items-center justify-center gap-2 hover:brightness-105 active:scale-[0.98] transition-all">
+<span>Search Marketplace</span>
+</button>
+</div>
+<p class="mt-4 text-xs text-slate-500 text-center uppercase tracking-tighter">Compare over 100,000+ listings live</p>
+</div>
+<!-- Link Comparison -->
+<div class="bg-white dark:bg-card-dark p-8 rounded-xl border border-slate-200 dark:border-border-dark shadow-2xl">
+<h3 class="text-sm font-bold uppercase tracking-widest text-slate-400 mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">link</span>
+                            Direct Link Comparison
+                        </h3>
+<div class="flex flex-col gap-4">
+<div class="relative group">
+<input class="w-full h-16 bg-slate-100 dark:bg-background-dark/50 border-none focus:ring-2 focus:ring-slate-400 rounded-lg px-6 text-lg transition-all placeholder:text-slate-500" placeholder="Paste Jumia or Konga link here..." type="text"/>
+</div>
+<button class="w-full h-14 bg-white dark:bg-white text-background-dark rounded-lg font-bold text-lg flex items-center justify-center gap-2 hover:bg-slate-100 transition-all">
+<span>Compare Prices</span>
+</button>
+</div>
+<div class="mt-4 flex justify-center gap-4 grayscale opacity-50">
+<span class="text-[10px] font-bold tracking-widest uppercase">Works With:</span>
+<span class="text-[10px] font-black uppercase">Jumia</span>
+<span class="text-[10px] font-black uppercase">Konga</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Background Decoration -->
+<div class="absolute top-0 right-0 -z-10 w-1/2 h-full bg-gradient-to-l from-primary/5 to-transparent blur-3xl"></div>
+<div class="absolute bottom-0 left-0 -z-10 w-1/3 h-1/2 bg-gradient-to-tr from-primary/10 to-transparent blur-3xl opacity-50"></div>
+</section>
+<!-- Features Section -->
+<section class="py-24 bg-slate-50 dark:bg-background-dark border-y border-slate-200 dark:border-border-dark">
+<div class="max-w-7xl mx-auto px-6">
+<div class="flex flex-col items-center text-center mb-16">
+<h2 class="text-3xl md:text-5xl font-black dark:text-white mb-4">Engineered for <span class="text-primary">Savings</span></h2>
+<p class="text-slate-600 dark:text-slate-400 max-w-2xl text-lg">
+                        PriceCompare NG helps you navigate the Nigerian e-commerce landscape with precision-engineered data tools.
+                    </p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+<!-- Feature 1 -->
+<div class="p-10 rounded-2xl bg-white dark:bg-card-dark border border-slate-200 dark:border-border-dark hover:border-primary/50 transition-all group">
+<div class="size-14 rounded-xl bg-primary/10 flex items-center justify-center text-primary mb-8 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-3xl">swap_horiz</span>
+</div>
+<h3 class="text-xl font-bold mb-4 dark:text-white">Price Comparison</h3>
+<p class="text-slate-600 dark:text-slate-400 leading-relaxed">
+                            See live prices from top retailers side-by-side to find the absolute best deal available in real-time.
+                        </p>
+</div>
+<!-- Feature 2 -->
+<div class="p-10 rounded-2xl bg-white dark:bg-card-dark border border-slate-200 dark:border-border-dark hover:border-primary/50 transition-all group">
+<div class="size-14 rounded-xl bg-primary/10 flex items-center justify-center text-primary mb-8 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-3xl">star_half</span>
+</div>
+<h3 class="text-xl font-bold mb-4 dark:text-white">Rating Analysis</h3>
+<p class="text-slate-600 dark:text-slate-400 leading-relaxed">
+                            Aggregated reviews from multiple sources across the Nigerian web to ensure product quality and vendor trust.
+                        </p>
+</div>
+<!-- Feature 3 -->
+<div class="p-10 rounded-2xl bg-white dark:bg-card-dark border border-slate-200 dark:border-border-dark hover:border-primary/50 transition-all group">
+<div class="size-14 rounded-xl bg-primary/10 flex items-center justify-center text-primary mb-8 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-3xl">timeline</span>
+</div>
+<h3 class="text-xl font-bold mb-4 dark:text-white">Price History</h3>
+<p class="text-slate-600 dark:text-slate-400 leading-relaxed">
+                            Track price trends over days and months to avoid artificial "sales" and buy at the lowest possible historical point.
+                        </p>
+</div>
+</div>
+</div>
+</section>
+<!-- CTA / Mobile App Tease -->
+<section class="py-24">
+<div class="max-w-7xl mx-auto px-6">
+<div class="relative bg-primary rounded-[2rem] p-12 overflow-hidden flex flex-col md:flex-row items-center justify-between">
+<div class="relative z-10 max-w-xl text-center md:text-left">
+<h2 class="text-4xl md:text-5xl font-black text-background-dark mb-6">Never overpay again.</h2>
+<p class="text-background-dark/80 text-lg font-medium mb-10">
+                            Join over 50,000 shoppers saving an average of ₦15,000 monthly using our smart comparison tools.
+                        </p>
+<div class="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
+<button class="bg-background-dark text-white px-8 py-4 rounded-xl font-bold hover:scale-105 transition-transform flex items-center justify-center gap-2">
+<span class="material-symbols-outlined">add_shopping_cart</span>
+                                Start Comparing Now
+                            </button>
+<button class="bg-background-dark/10 border-2 border-background-dark/20 text-background-dark px-8 py-4 rounded-xl font-bold hover:bg-background-dark/5 transition-colors">
+                                Learn More
+                            </button>
+</div>
+</div>
+<div class="mt-12 md:mt-0 relative h-64 w-64 md:h-80 md:w-80 bg-background-dark/10 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-[10rem] text-background-dark/20">query_stats</span>
+</div>
+<!-- Decorative patterns -->
+<div class="absolute -right-20 -top-20 size-80 bg-white/10 rounded-full blur-3xl"></div>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="bg-white dark:bg-card-dark border-t border-slate-200 dark:border-border-dark py-16">
+<div class="max-w-7xl mx-auto px-6">
+<div class="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
+<div class="col-span-1 md:col-span-2">
+<div class="flex items-center gap-2 mb-6">
+<div class="size-6 bg-primary rounded flex items-center justify-center text-background-dark">
+<span class="material-symbols-outlined text-xs font-bold">payments</span>
+</div>
+<span class="text-lg font-black uppercase tracking-tight dark:text-white">PriceCompare <span class="text-primary">NG</span></span>
+</div>
+<p class="text-slate-500 max-w-sm mb-6">
+                        The ultimate destination for smart shopping in Nigeria. We aggregate data from the biggest retailers so you don't have to.
+                    </p>
+<div class="flex gap-4">
+<a class="size-10 rounded-full bg-slate-100 dark:bg-background-dark flex items-center justify-center hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-lg">public</span>
+</a>
+<a class="size-10 rounded-full bg-slate-100 dark:bg-background-dark flex items-center justify-center hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-lg">share</span>
+</a>
+<a class="size-10 rounded-full bg-slate-100 dark:bg-background-dark flex items-center justify-center hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-lg">alternate_email</span>
+</a>
+</div>
+</div>
+<div>
+<h4 class="font-bold mb-6 dark:text-white">Company</h4>
+<ul class="space-y-4 text-sm text-slate-500">
+<li><a class="hover:text-primary transition-colors" href="#">About Us</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Careers</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Partners</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Contact</a></li>
+</ul>
+</div>
+<div>
+<h4 class="font-bold mb-6 dark:text-white">Legal</h4>
+<ul class="space-y-4 text-sm text-slate-500">
+<li><a class="hover:text-primary transition-colors" href="#">Terms of Service</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Privacy Policy</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Cookie Policy</a></li>
+<li><a class="hover:text-primary transition-colors" href="#">Compliance</a></li>
+</ul>
+</div>
+</div>
+<div class="pt-8 border-t border-slate-200 dark:border-border-dark flex flex-col md:flex-row justify-between items-center gap-4">
+<p class="text-xs text-slate-500 uppercase tracking-widest">© 2024 PriceCompare NG. All rights reserved.</p>
+<p class="text-xs text-slate-500">Made with precision in Lagos.</p>
+</div>
+</div>
+</footer>
+</body></html>
