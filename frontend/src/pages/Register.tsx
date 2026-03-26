@@ -8,6 +8,7 @@ import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
+import { Mail, Lock, Shield, Loader2, UserPlus } from 'lucide-react';
 
 const registerSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -90,12 +91,15 @@ export const Register = () => {
                 <label htmlFor="email" className="block text-sm font-medium text-slate-300 mb-2">
                   Email
                 </label>
-                <input
-                  {...register('email')}
-                  type="email"
-                  className="w-full px-4 py-3 bg-[#0A0A0A]/50 border border-[#262626] rounded-lg text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#1edc6a] focus:border-transparent"
-                  placeholder="you@example.com"
-                />
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                  <input
+                    {...register('email')}
+                    type="email"
+                    className="w-full pl-10 pr-4 py-3 bg-[#0A0A0A]/50 border border-[#262626] rounded-lg text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#1edc6a] focus:border-transparent"
+                    placeholder="you@example.com"
+                  />
+                </div>
                 {errors.email && (
                   <motion.p
                     className="mt-2 text-sm text-red-400"
@@ -111,12 +115,15 @@ export const Register = () => {
                 <label htmlFor="password" className="block text-sm font-medium text-slate-300 mb-2">
                   Password
                 </label>
-                <input
-                  {...register('password')}
-                  type="password"
-                  className="w-full px-4 py-3 bg-[#0A0A0A]/50 border border-[#262626] rounded-lg text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#1edc6a] focus:border-transparent"
-                  placeholder="••••••••"
-                />
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                  <input
+                    {...register('password')}
+                    type="password"
+                    className="w-full pl-10 pr-4 py-3 bg-[#0A0A0A]/50 border border-[#262626] rounded-lg text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#1edc6a] focus:border-transparent"
+                    placeholder="••••••••"
+                  />
+                </div>
                 {errors.password && (
                   <motion.p
                     className="mt-2 text-sm text-red-400"
@@ -132,12 +139,15 @@ export const Register = () => {
                 <label htmlFor="confirmPassword" className="block text-sm font-medium text-slate-300 mb-2">
                   Confirm Password
                 </label>
-                <input
-                  {...register('confirmPassword')}
-                  type="password"
-                  className="w-full px-4 py-3 bg-[#0A0A0A]/50 border border-[#262626] rounded-lg text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#1edc6a] focus:border-transparent"
-                  placeholder="••••••••"
-                />
+                <div className="relative">
+                  <Shield className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                  <input
+                    {...register('confirmPassword')}
+                    type="password"
+                    className="w-full pl-10 pr-4 py-3 bg-[#0A0A0A]/50 border border-[#262626] rounded-lg text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#1edc6a] focus:border-transparent"
+                    placeholder="••••••••"
+                  />
+                </div>
                 {errors.confirmPassword && (
                   <motion.p
                     className="mt-2 text-sm text-red-400"
@@ -154,9 +164,19 @@ export const Register = () => {
                   type="submit"
                   disabled={registerUser.isPending}
                   size="lg"
-                  className="w-full cursor-pointer"
+                  className="w-full cursor-pointer gap-2"
                 >
-                  {registerUser.isPending ? 'Creating account...' : 'Sign up'}
+                  {registerUser.isPending ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Creating account...
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus className="w-5 h-5" />
+                      Sign up
+                    </>
+                  )}
                 </Button>
               </motion.div>
 
