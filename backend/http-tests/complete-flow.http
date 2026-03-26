@@ -1,0 +1,100 @@
+### Complete API Test Flow
+### Run these requests in order from top to bottom
+
+@baseUrl = http://localhost:3000/api/v1
+
+### 1. Health Check (verify server is running)
+GET http://localhost:3000/health
+
+###
+
+### 2. Register a new user
+# @name register
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "demo@example.com",
+  "password": "password123"
+}
+
+###
+
+### 3. Login with the registered user
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "demo@example.com",
+  "password": "password123"
+}
+
+###
+
+### 4. Get current user info (uses token from login automatically)
+GET {{baseUrl}}/auth/me
+Authorization: Bearer {{login.response.body.accessToken}}
+
+###
+
+### 5. Search for products by keyword
+POST {{baseUrl}}/search/keyword
+Content-Type: application/json
+
+{
+  "keyword": "Play Station 4"
+}
+
+###
+
+### 6. Search by URL
+POST {{baseUrl}}/search/url
+Content-Type: application/json
+
+{
+  "url": "https://www.jumia.com.ng/sony-playstation-4-fat-console-plus-extra-controller-and-12-games-installed-including-fc26-411309660.html"
+}
+
+###
+
+### 7. Save a comparison (requires authentication)
+# @name saveComparison
+POST {{baseUrl}}/comparisons
+Authorization: Bearer {{login.response.body.accessToken}}
+Content-Type: application/json
+
+{
+  "comparisonData": {
+    "products": [
+      {
+        "platform": "jumia",
+        "name": "HP Laptop 15.6 Intel Core i3",
+        "price": 250000,
+        "currency": "NGN",
+        "rating": 4.5,
+        "reviewCount": 120,
+        "url": "https://www.jumia.com.ng/product-url",
+        "availability": true,
+        "imageUrl": null
+      }
+    ],
+    "bestValueIndex": 0,
+    "searchQuery": "hp laptop",
+    "timestamp": "2024-02-24T20:30:00.000Z"
+  }
+}
+
+###
+
+### 8. Get all saved comparisons
+GET {{baseUrl}}/comparisons
+Authorization: Bearer {{login.response.body.accessToken}}
+
+###
+
+### 9. Delete a comparison (replace 1 with actual ID from step 8)
+DELETE {{baseUrl}}/comparisons/1
+Authorization: Bearer {{login.response.body.accessToken}}
+
+###

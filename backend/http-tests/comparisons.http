@@ -1,0 +1,66 @@
+### Variables
+@baseUrl = http://localhost:3000/api/v1
+@token = YOUR_JWT_TOKEN_HERE
+
+### Note: First login using auth.http to get a token, then replace @token above
+
+### Get All Saved Comparisons
+GET {{baseUrl}}/comparisons
+Authorization: Bearer {{token}}
+
+### Save a Comparison
+POST {{baseUrl}}/comparisons
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "comparisonData": {
+    "products": [
+      {
+        "platform": "jumia",
+        "name": "HP Laptop 15.6 Intel Core i3",
+        "price": 250000,
+        "currency": "NGN",
+        "rating": 4.5,
+        "reviewCount": 120,
+        "url": "https://www.jumia.com.ng/product-url",
+        "availability": true,
+        "imageUrl": "https://example.com/image.jpg"
+      },
+      {
+        "platform": "konga",
+        "name": "HP Laptop 15.6 Intel Core i3",
+        "price": 245000,
+        "currency": "NGN",
+        "rating": 4.3,
+        "reviewCount": 85,
+        "url": "https://www.konga.com/product-url",
+        "availability": true,
+        "imageUrl": "https://example.com/image2.jpg"
+      }
+    ],
+    "bestValueIndex": 1,
+    "searchQuery": "hp laptop",
+    "timestamp": "2024-02-24T20:30:00.000Z"
+  }
+}
+
+### Delete a Comparison (replace :id with actual comparison ID)
+DELETE {{baseUrl}}/comparisons/1
+Authorization: Bearer {{token}}
+
+### Try to access without token (should fail with 401)
+GET {{baseUrl}}/comparisons
+
+### Try to save comparison without token (should fail with 401)
+POST {{baseUrl}}/comparisons
+Content-Type: application/json
+
+{
+  "comparisonData": {
+    "products": [],
+    "bestValueIndex": 0,
+    "searchQuery": "test",
+    "timestamp": "2024-02-24T20:30:00.000Z"
+  }
+}

@@ -1,0 +1,58 @@
+### Variables
+@baseUrl = http://localhost:3000/api/v1
+
+### Search by Keyword - Laptop
+POST {{baseUrl}}/search/keyword
+Content-Type: application/json
+
+{
+  "keyword": "laptop"
+}
+
+### Search by Keyword - Phone
+POST {{baseUrl}}/search/keyword
+Content-Type: application/json
+
+{
+  "keyword": "iphone"
+}
+
+### Search by Keyword - Short keyword (should fail)
+POST {{baseUrl}}/search/keyword
+Content-Type: application/json
+
+{
+  "keyword": "a"
+}
+
+### Search by URL - Jumia
+POST {{baseUrl}}/search/url
+Content-Type: application/json
+
+{
+  "url": "https://www.jumia.com.ng/generic-hp-laptop-15.6-intel-core-i3-4gb-ram-500gb-hdd-windows-10-black-71686019.html"
+}
+
+### Search by URL - Konga
+POST {{baseUrl}}/search/url
+Content-Type: application/json
+
+{
+  "url": "https://www.konga.com/product/hp-laptop-15-6-intel-core-i3-4gb-ram-500gb-hdd-5678901"
+}
+
+### Search by URL - Invalid URL (should fail)
+POST {{baseUrl}}/search/url
+Content-Type: application/json
+
+{
+  "url": "https://www.amazon.com/product"
+}
+
+### Search by URL - Missing URL (should fail)
+POST {{baseUrl}}/search/url
+Content-Type: application/json
+
+{
+  "url": ""
+}

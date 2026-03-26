@@ -1,0 +1,39 @@
+### Variables
+@baseUrl = http://localhost:3000/api/v1
+@email = test@example.com
+@password = testpassword123
+
+### Health Check
+GET http://localhost:3000/health
+
+### Register New User
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+### Login
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+### Get Current User (requires token from login)
+GET {{baseUrl}}/auth/me
+Authorization: Bearer {{login.response.body.token.accessToken}}
+
+### Login with Invalid Credentials (should fail)
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "wrong@example.com",
+  "password": "wrongpassword"
+}
