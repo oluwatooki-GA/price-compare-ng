@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useNavigate, Link } from 'react-router-dom';
 import { useEffect } from 'react';
 import { motion } from 'framer-motion';
+import toast from 'react-hot-toast';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 
@@ -41,7 +42,18 @@ export const Register = () => {
       { email: data.email, password: data.password },
       {
         onSuccess: () => {
+          toast.success('Account created successfully!', {
+            duration: 3000,
+            position: 'top-center',
+          });
           navigate('/');
+        },
+        onError: (error: any) => {
+          const message = error?.userMessage || error?.response?.data?.message || 'Registration failed. Please try again.';
+          toast.error(message, {
+            duration: 4000,
+            position: 'top-center',
+          });
         },
       }
     );
@@ -136,18 +148,6 @@ export const Register = () => {
                   </motion.p>
                 )}
               </div>
-
-              {registerUser.isError && (
-                <motion.div
-                  className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg"
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                >
-                  <p className="text-sm text-red-400 text-center">
-                    Registration failed. Please try again.
-                  </p>
-                </motion.div>
-              )}
 
               <motion.div whileTap={{ y: 1 }}>
                 <Button

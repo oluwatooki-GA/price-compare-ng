@@ -30,13 +30,18 @@ apiClient.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
-      window.location.href = '/login';
+      // Only redirect if not already on login/register page and not a login/register request
+      const isAuthPage = window.location.pathname === '/login' || window.location.pathname === '/register';
+      const isAuthRequest = error.config?.url?.includes('/auth/login') || error.config?.url?.includes('/auth/register');
+      if (!isAuthPage && !isAuthRequest) {
+        window.location.href = '/login';
+      }
     }
-    
+
     // Format error message for user display
     const formattedMessage = formatError(error);
     error.userMessage = formattedMessage;
-    
+
     return Promise.reject(error);
   }
 );

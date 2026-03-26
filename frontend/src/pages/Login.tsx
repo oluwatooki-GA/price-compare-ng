@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useNavigate, Link } from 'react-router-dom';
 import { useEffect } from 'react';
 import { motion } from 'framer-motion';
+import toast from 'react-hot-toast';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 
@@ -35,7 +36,18 @@ export const Login = () => {
   const onSubmit = (data: LoginFormData) => {
     login.mutate(data, {
       onSuccess: () => {
+        toast.success('Welcome back!', {
+          duration: 3000,
+          position: 'top-center',
+        });
         navigate('/');
+      },
+      onError: (error: any) => {
+        const message = error?.userMessage || error?.response?.data?.message || 'Invalid email or password';
+        toast.error(message, {
+          duration: 4000,
+          position: 'top-center',
+        });
       },
     });
   };
@@ -108,18 +120,6 @@ export const Login = () => {
                   </motion.p>
                 )}
               </div>
-
-              {login.isError && (
-                <motion.div
-                  className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg"
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                >
-                  <p className="text-sm text-red-400 text-center">
-                    Invalid email or password
-                  </p>
-                </motion.div>
-              )}
 
               <motion.div whileTap={{ y: 1 }}>
                 <Button
