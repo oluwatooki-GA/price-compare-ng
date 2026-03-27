@@ -55,7 +55,7 @@ export const SearchFiltersComponent = ({
     onReset();
   };
 
-  const PLATFORMS = ['jumia', 'jiji', 'temu', 'konga'] as const;
+  const PLATFORMS = ['jumia', 'jiji', 'konga'] as const;
 
   return (
       <Card className="mb-6">

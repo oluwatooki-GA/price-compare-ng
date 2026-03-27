@@ -192,7 +192,7 @@ export const UrlPrefillForm = () => {
                     setStep('prefilled');
                 },
                 onError: () => {
-                    setUrlError("Failed to scrape that URL. Make sure it's a supported platform (Jumia, Jiji, Temu, Konga).");
+                    setUrlError("Failed to scrape that URL. Make sure it's a supported platform (Jumia or Jiji).");
                     setStep('paste');
                 },
             }
@@ -260,7 +260,7 @@ export const UrlPrefillForm = () => {
                                     value={url}
                                     onChange={e => { setUrl(e.target.value); setUrlError(''); }}
                                     className="w-full h-16 bg-[#0A0A0A]/50 border border-[#262626] focus:border-[#1edc6a] focus:ring-2 focus:ring-[#1edc6a] rounded-lg px-6 text-lg text-white placeholder:text-slate-500 transition-all outline-none"
-                                    placeholder="Paste Jumia / Jiji / Temu / Konga link…"
+                                    placeholder="Paste Jumia or Jiji link…"
                                     type="text"
                                     disabled={isScraping}
                                 />
@@ -283,7 +283,7 @@ export const UrlPrefillForm = () => {
 
                             <div className="flex justify-center gap-4 grayscale opacity-40 mt-1">
                                 <span className="text-[10px] font-bold tracking-widest uppercase">Works with:</span>
-                                {['Jumia', 'Jiji', 'Temu', 'Konga'].map(p => (
+                                {['Jumia', 'Jiji'].map(p => (
                                     <span key={p} className="text-[10px] font-black uppercase">{p}</span>
                                 ))}
                             </div>

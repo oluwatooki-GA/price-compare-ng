@@ -195,7 +195,7 @@ const GroupDetail = ({
               onClick={() => onDelete(item.id)}
               disabled={isDeleting}
               title="Remove from saved"
-              className="absolute top-3 left-3 w-7 h-7 flex items-center justify-center rounded-full bg-[#0A0A0A]/80 border border-[#333] text-slate-500 hover:text-red-400 hover:border-red-400/40 transition-all disabled:opacity-40 backdrop-blur-sm"
+              className="absolute top-3 left-3 w-7 h-7 flex items-center justify-center rounded-full bg-[#0A0A0A]/80 border border-[#333] text-slate-500 hover:text-red-400 hover:border-red-400/40 transition-all disabled:opacity-40 backdrop-blur-sm cursor-pointer"
             >
               <Trash2 className="w-3.5 h-3.5" />
             </button>

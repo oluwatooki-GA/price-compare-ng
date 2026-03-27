@@ -37,7 +37,7 @@ export const ComparisonCard = ({ comparison, onSave, isSaving }: ComparisonCardP
           <button
             onClick={onSave}
             disabled={isSaving}
-            className="flex items-center gap-2 px-6 py-3 bg-[#1edc6a] text-[#0A0A0A] rounded-lg font-bold hover:brightness-110 disabled:opacity-50 transition-all"
+            className="flex items-center gap-2 px-6 py-3 bg-[#1edc6a] text-[#0A0A0A] rounded-lg font-bold hover:brightness-110 disabled:opacity-50 transition-all cursor-pointer"
           >
             {isSaving ? (
               <>
