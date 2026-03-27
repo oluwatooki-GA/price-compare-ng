@@ -159,8 +159,8 @@ export const SearchResults = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] py-12">
-      <div className="container mx-auto px-8 md:px-12 lg:px-16">
+    <div className="min-h-screen bg-[#0A0A0A] py-8 sm:py-12">
+      <div className="container mx-auto px-4 sm:px-6 md:px-8 lg:px-16">
 
         {/* Back */}
         <motion.div className="mb-8" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
@@ -177,14 +177,14 @@ export const SearchResults = () => {
 
         {/* Heading + sort */}
         <motion.div
-          className="flex items-center justify-between mb-8"
+          className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 sm:mb-8"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
-          <div>
-            <h1 className="text-3xl font-bold text-white mb-1">Search Results</h1>
-            <p className="text-slate-400 text-sm">
+          <div className="w-full sm:w-auto">
+            <h1 className="text-2xl sm:text-3xl font-bold text-white mb-1">Search Results</h1>
+            <p className="text-slate-400 text-xs sm:text-sm">
               {pinnedProducts.length} product{pinnedProducts.length !== 1 ? 's' : ''} for{' '}
               <span className="text-white font-medium">"{query}"</span>
               {totalPages > 1 && (
@@ -197,7 +197,7 @@ export const SearchResults = () => {
           <select
             value={sortBy}
             onChange={e => { setSortBy(e.target.value as SortBy); setPage(0); }}
-            className="h-9 bg-[#161616] border border-[#262626] focus:border-[#1edc6a] rounded-lg px-3 text-sm text-white outline-none transition-colors"
+            className="w-full sm:w-auto h-9 bg-[#161616] border border-[#262626] focus:border-[#1edc6a] rounded-lg px-3 text-sm text-white outline-none transition-colors"
           >
             <option value="price_asc">Price: Low → High</option>
             <option value="price_desc">Price: High → Low</option>

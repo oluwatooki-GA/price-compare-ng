@@ -262,8 +262,8 @@ export const SavedComparisons = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] py-12">
-      <div className="container mx-auto px-8 md:px-12 lg:px-16">
+    <div className="min-h-screen bg-[#0A0A0A] py-8 sm:py-12">
+      <div className="container mx-auto px-4 sm:px-6 md:px-8 lg:px-16">
 
         <AnimatePresence mode="wait">
 

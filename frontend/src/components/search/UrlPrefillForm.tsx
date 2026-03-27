@@ -88,28 +88,28 @@ const RangeSlider = ({ min, max, low, high, onChange }: RangeSliderProps) => {
     }, [low, high, min, max, onChange]);
 
     return (
-        <div ref={trackRef} className="relative w-full py-4" onMouseDown={handleTrackClick}>
+        <div ref={trackRef} className="relative w-full py-5" onMouseDown={handleTrackClick}>
             {/* Background track */}
-            <div className="absolute top-1/2 left-0 right-0 h-2 -translate-y-1/2 rounded-full bg-[#262626]" />
+            <div className="absolute top-1/2 left-0 right-0 h-2.5 -translate-y-1/2 rounded-full bg-[#262626]" />
 
             {/* Active range */}
             <div
-                className="absolute top-1/2 h-2 -translate-y-1/2 rounded-full bg-[#1edc6a]"
+                className="absolute top-1/2 h-2.5 -translate-y-1/2 rounded-full bg-[#1edc6a]"
                 style={{ left: `${lowPct}%`, right: `${100 - highPct}%` }}
             />
 
             {/* Low handle */}
             <div
                 onMouseDown={handleMouseDown('low')}
-                className="absolute top-1/2 w-5 h-5 -translate-y-1/2 rounded-full bg-[#1edc6a] shadow-lg"
-                style={{ left: `calc(${lowPct}% - 10px)` }}
+                className="absolute top-1/2 w-6 h-6 -translate-y-1/2 rounded-full bg-[#1edc6a] shadow-lg touch-none"
+                style={{ left: `calc(${lowPct}% - 12px)` }}
             />
 
             {/* High handle */}
             <div
                 onMouseDown={handleMouseDown('high')}
-                className="absolute top-1/2 w-5 h-5 -translate-y-1/2 rounded-full bg-[#1edc6a] shadow-lg"
-                style={{ left: `calc(${highPct}% - 10px)` }}
+                className="absolute top-1/2 w-6 h-6 -translate-y-1/2 rounded-full bg-[#1edc6a] shadow-lg touch-none"
+                style={{ left: `calc(${highPct}% - 12px)` }}
             />
         </div>
     );
@@ -236,9 +236,9 @@ export const UrlPrefillForm = () => {
 
     return (
         <Card>
-            <CardContent className="p-10">
-                <h3 className="text-sm font-bold uppercase tracking-widest text-slate-400 mb-6 flex items-center gap-2">
-                    <span>🔗</span>
+            <CardContent className="p-4 sm:p-6 md:p-10">
+                <h3 className="text-xs sm:text-sm font-bold uppercase tracking-widest text-slate-400 mb-4 sm:mb-6 flex items-center gap-2">
+                    <span className="text-sm sm:text-base">🔗</span>
                     Compare by Link
                 </h3>
 
@@ -259,12 +259,12 @@ export const UrlPrefillForm = () => {
                                 <input
                                     value={url}
                                     onChange={e => { setUrl(e.target.value); setUrlError(''); }}
-                                    className="w-full h-16 bg-[#0A0A0A]/50 border border-[#262626] focus:border-[#1edc6a] focus:ring-2 focus:ring-[#1edc6a] rounded-lg px-6 text-lg text-white placeholder:text-slate-500 transition-all outline-none"
+                                    className="w-full h-14 sm:h-16 bg-[#0A0A0A]/50 border border-[#262626] focus:border-[#1edc6a] focus:ring-2 focus:ring-[#1edc6a] rounded-lg px-4 sm:px-6 text-base sm:text-lg text-white placeholder:text-slate-500 transition-all outline-none"
                                     placeholder="Paste Jumia or Jiji link…"
                                     type="text"
                                     disabled={isScraping}
                                 />
-                                {urlError && <p className="mt-1 text-sm text-red-400">{urlError}</p>}
+                                {urlError && <p className="mt-1 text-xs sm:text-sm text-red-400">{urlError}</p>}
                             </div>
 
                             <motion.div whileTap={{ y: 1 }}>
@@ -323,7 +323,7 @@ export const UrlPrefillForm = () => {
                                 <input
                                     value={editedName}
                                     onChange={e => setEditedName(e.target.value)}
-                                    className="w-full h-12 bg-[#0A0A0A]/50 border border-[#262626] focus:border-[#1edc6a] focus:ring-2 focus:ring-[#1edc6a] rounded-lg px-4 text-base text-white placeholder:text-slate-500 outline-none transition-all"
+                                    className="w-full h-12 sm:h-12 bg-[#0A0A0A]/50 border border-[#262626] focus:border-[#1edc6a] focus:ring-2 focus:ring-[#1edc6a] rounded-lg px-4 text-base text-white placeholder:text-slate-500 outline-none transition-all"
                                     placeholder="Product name"
                                 />
                             </div>

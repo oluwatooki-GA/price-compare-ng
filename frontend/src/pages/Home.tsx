@@ -26,8 +26,8 @@ export const Home = () => {
   return (
       <div className="min-h-screen bg-[#0A0A0A] text-white">
         {/* Hero Section */}
-        <section className="relative overflow-hidden pt-20 pb-32">
-          <div className="max-w-7xl mx-auto px-8 md:px-12 lg:px-16 relative z-10">
+        <section className="relative overflow-hidden pt-20 pb-16 sm:pb-24 md:pb-32">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-16 relative z-10">
             <motion.div
                 className="max-w-3xl"
                 initial={{ opacity: 0, y: 20 }}
@@ -35,7 +35,7 @@ export const Home = () => {
                 transition={{ duration: 0.6 }}
             >
               <motion.h1
-                  className="text-5xl md:text-7xl font-black leading-[1.1] mb-6 tracking-tight"
+                  className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black leading-[1.1] mb-6 tracking-tight"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6, delay: 0.1 }}
@@ -43,12 +43,12 @@ export const Home = () => {
                 Smartest way to <br/><span className="text-[#1edc6a]">shop in Nigeria.</span>
               </motion.h1>
               <motion.p
-                  className="text-lg md:text-xl text-slate-400 mb-12 leading-relaxed max-w-2xl"
+                  className="text-base sm:text-lg md:text-xl text-slate-400 mb-8 sm:mb-12 leading-relaxed max-w-2xl"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6, delay: 0.2 }}
               >
-                Instantly compare prices across Jumia ,Konga and Jiji. Save money with every click. No more switching tabs—get the best deals in seconds.
+                Instantly compare prices across Jumia, Konga and Jiji. Save money with every click. No more switching tabs—get the best deals in seconds.
               </motion.p>
             </motion.div>
 
@@ -150,23 +150,23 @@ export const Home = () => {
         </section>
 
         {/* Features Section */}
-        <section className="py-24 bg-[#0A0A0A] border-y border-[#262626]">
-          <div className="max-w-7xl mx-auto px-8 md:px-12 lg:px-16">
+        <section className="py-16 sm:py-20 md:py-24 bg-[#0A0A0A] border-y border-[#262626]">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-16">
             <motion.div
-                className="flex flex-col items-center text-center mb-16"
+                className="flex flex-col items-center text-center mb-12 sm:mb-16"
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.6 }}
             >
-              <h2 className="text-3xl md:text-5xl font-black mb-4">
+              <h2 className="text-2xl sm:text-3xl md:text-5xl font-black mb-4">
                 Engineered for <span className="text-[#1edc6a]">Savings</span>
               </h2>
-              <p className="text-slate-400 max-w-2xl text-lg">
+              <p className="text-slate-400 max-w-2xl text-sm sm:text-base md:text-lg px-4">
                 PriceCompare NG helps you navigate the Nigerian e-commerce landscape with precision-engineered data tools.
               </p>
             </motion.div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
               {[
                 { icon: '⇄', title: 'Price Comparison', desc: 'See live prices from top retailers side-by-side to find the absolute best deal available in real-time.' },
                 { icon: '★', title: 'Rating Analysis', desc: 'Aggregated reviews from multiple sources across the Nigerian web to ensure product quality and vendor trust.' },
@@ -200,18 +200,18 @@ export const Home = () => {
         </section>
 
         {/* CTA Section */}
-        <section className="py-24">
-          <div className="max-w-7xl mx-auto px-8 md:px-12 lg:px-16">
+        <section className="py-16 sm:py-20 md:py-24">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 lg:px-16">
             <motion.div
-                className="relative bg-[#1edc6a] rounded-[2rem] p-12 overflow-hidden flex flex-col md:flex-row items-center justify-between"
+                className="relative bg-[#1edc6a] rounded-[1rem] sm:rounded-[2rem] p-6 sm:p-8 md:p-12 overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6"
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.6 }}
             >
               <div className="relative z-10 max-w-xl text-center md:text-left">
-                <h2 className="text-4xl md:text-5xl font-black text-[#0A0A0A] mb-6">Never overpay again.</h2>
-                <p className="text-[#0A0A0A]/80 text-lg font-medium mb-10">
+                <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-[#0A0A0A] mb-4 sm:mb-6">Never overpay again.</h2>
+                <p className="text-[#0A0A0A]/80 text-sm sm:text-base md:text-lg font-medium mb-6 sm:mb-10">
                   Join over 50,000 shoppers saving an average of ₦15,000 monthly using our smart comparison tools.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">

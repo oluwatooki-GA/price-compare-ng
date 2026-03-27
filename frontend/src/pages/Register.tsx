@@ -61,7 +61,7 @@ export const Register = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0A0A0A] px-8 md:px-12">
+    <div className="min-h-screen flex items-center justify-center bg-[#0A0A0A] px-4 sm:px-6 md:px-8 lg:px-12">
       <motion.div
         className="max-w-md w-full"
         initial={{ opacity: 0, y: 30 }}
