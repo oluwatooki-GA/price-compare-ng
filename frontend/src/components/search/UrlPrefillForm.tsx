@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect, MouseEvent } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import type { MouseEvent as ReactMouseEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '../ui/button';
 import { Card, CardContent } from '../ui/card';
@@ -34,7 +35,7 @@ const RangeSlider = ({ min, max, low, high, onChange }: RangeSliderProps) => {
     const lowPct = pct(low);
     const highPct = pct(high);
 
-    const handleMouseDown = (handle: 'low' | 'high') => (e: MouseEvent<HTMLDivElement, MouseEvent>) => {
+    const handleMouseDown = (handle: 'low' | 'high') => (e: ReactMouseEvent<HTMLDivElement>) => {
         activeHandle.current = handle;
         isDragging.current = true;
         startValues.current = { low, high, x: e.clientX };
@@ -42,7 +43,7 @@ const RangeSlider = ({ min, max, low, high, onChange }: RangeSliderProps) => {
         e.stopPropagation();
     };
 
-    const handleTrackClick = (e: MouseEvent<HTMLDivElement, MouseEvent>) => {
+    const handleTrackClick = (e: ReactMouseEvent<HTMLDivElement>) => {
         if (!trackRef.current) return;
         const rect = trackRef.current.getBoundingClientRect();
         const x = e.clientX - rect.left;
@@ -58,7 +59,7 @@ const RangeSlider = ({ min, max, low, high, onChange }: RangeSliderProps) => {
     };
 
     useEffect(() => {
-        const handleMouseMove = (e: MouseEvent) => {
+        const handleMouseMove = (e: globalThis.MouseEvent) => {
             if (!isDragging.current || !trackRef.current) return;
 
             const rect = trackRef.current.getBoundingClientRect();
