@@ -48,7 +48,7 @@ export const Home = () => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6, delay: 0.2 }}
               >
-                Instantly compare prices across Jumia and Konga. Save money with every click. No more switching tabs—get the best deals in seconds.
+                Instantly compare prices across Jumia ,Konga and Jiji. Save money with every click. No more switching tabs—get the best deals in seconds.
               </motion.p>
             </motion.div>
 
