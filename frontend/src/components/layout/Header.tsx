@@ -8,17 +8,9 @@ export const Header = () => {
   return (
     <nav className="fixed top-0 w-full z-50 bg-[#0A0A0A]/80 backdrop-blur-xl border-b border-white/10">
       <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-3">
-          {/* Logo Icon */}
-          <div className="size-10 bg-gradient-to-br from-[#1edc6a] to-[#17c55e] rounded-xl flex items-center justify-center shadow-lg shadow-[#1edc6a]/20">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="currentColor" className="text-black/80"/>
-              <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" className="text-black/80"/>
-              <path d="M2 7V17L12 22V12L2 7Z" fill="currentColor" className="text-black/40"/>
-              <path d="M22 7V17L12 22V12L22 7Z" fill="currentColor" className="text-black/60"/>
-            </svg>
-          </div>
-          <span className="text-xl font-extrabold tracking-tight text-white">
+        <Link to="/" className="flex items-center gap-3 group">
+          <img src="/logo.svg" alt="PriceCompare NG" className="size-10" />
+          <span className="text-xl font-extrabold tracking-tight text-white group-hover:text-[#1edc6a] transition-colors">
             PriceCompare <span className="text-[#1edc6a]">NG</span>
           </span>
         </Link>
