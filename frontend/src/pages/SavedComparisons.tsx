@@ -141,7 +141,7 @@ const GroupDetail = ({
   isDeleting: boolean;
 }) => {
   // Best value = cheapest available product in this group
-  const products = group.items
+  let products = group.items
     .map(i => ({ item: i, product: i.comparisonData?.products?.[0] }))
     .filter(x => x.product);
 
@@ -153,6 +153,15 @@ const GroupDetail = ({
       a.product.price < b.product.price ? a : b
     ).product.url;
   })();
+
+  // Sort so best value product comes first
+  if (bestValueUrl) {
+    products = [...products].sort((a, b) => {
+      if (a.product.url === bestValueUrl) return -1;
+      if (b.product.url === bestValueUrl) return 1;
+      return 0;
+    });
+  }
 
   return (
     <motion.div
