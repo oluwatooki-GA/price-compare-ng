@@ -18,6 +18,9 @@ export const Header = () => {
               <path d="M22 7V17L12 22V12L22 7Z" fill="currentColor" className="text-black/60"/>
             </svg>
           </div>
+          <span className="text-xl font-extrabold tracking-tight text-white">
+            PriceCompare <span className="text-[#1edc6a]">NG</span>
+          </span>
         </Link>
 
         <div className="hidden md:flex items-center gap-10">
