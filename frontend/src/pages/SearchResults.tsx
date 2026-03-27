@@ -220,19 +220,17 @@ export const SearchResults = () => {
                 product={product}
                 isBestValue={product.url === bestValueUrl}
               />
-              {isAuthenticated && (
-                <button
-                  onClick={() => handleSave(result)}
-                  disabled={saveComparison.isPending}
-                  className={`absolute top-3 right-3 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded backdrop-blur-sm transition-colors disabled:opacity-50 ${
-                    savedUrls.has(product.url)
-                      ? 'bg-[#1edc6a]/20 text-[#1edc6a] cursor-default'
-                      : 'bg-[#262626]/80 text-slate-400 hover:text-white hover:bg-[#333]'
-                  }`}
-                >
-                  {saveComparison.isPending ? '…' : savedUrls.has(product.url) ? '✓' : 'Save'}
-                </button>
-              )}
+              <button
+                onClick={() => isAuthenticated ? handleSave(result) : toast('Login to save comparisons', { icon: '🔒' })}
+                disabled={saveComparison.isPending}
+                className={`absolute top-3 right-3 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded backdrop-blur-sm transition-colors disabled:opacity-50 cursor-pointer ${
+                  savedUrls.has(product.url)
+                    ? 'bg-[#1edc6a]/20 text-[#1edc6a]'
+                    : 'bg-[#262626]/80 text-slate-400 hover:text-white hover:bg-[#333]'
+                }`}
+              >
+                {saveComparison.isPending ? '…' : savedUrls.has(product.url) ? '✓' : 'Save'}
+              </button>
             </motion.div>
           ))}
         </div>

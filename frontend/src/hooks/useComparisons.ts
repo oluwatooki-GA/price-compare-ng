@@ -15,6 +15,7 @@ export const useComparisons = () => {
   const comparisons = useQuery({
     queryKey: ['comparisons'],
     queryFn: comparisonsApi.getUserComparisons,
+    enabled: !!localStorage.getItem('token'),
     staleTime: 1 * 60 * 1000, // 1 minute for saved comparisons
   });
 
