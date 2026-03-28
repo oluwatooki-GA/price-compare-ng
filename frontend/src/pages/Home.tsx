@@ -1,27 +1,11 @@
-// import { useState } from 'react'; // TODO: Re-enable when keyword search is implemented
-// import { useNavigate } from 'react-router-dom'; // TODO: Re-enable when keyword search is implemented
 import { useSearch } from '../hooks/useSearch';
 import { motion } from 'framer-motion';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
-import { UrlPrefillForm } from '../components/search/UrlPrefillForm';
+import { UnifiedSearch } from '../components/search/UnifiedSearch';
 
 export const Home = () => {
-  // const [keywordQuery, setKeywordQuery] = useState(''); // TODO: Re-enable when keyword search is implemented
   const { searchByKeyword } = useSearch();
-  // const navigate = useNavigate(); // TODO: Re-enable when keyword search is implemented
-
-  // const handleKeywordSearch = (e: React.FormEvent) => { // TODO: Re-enable when keyword search is implemented
-  //   e.preventDefault();
-  //   if (!keywordQuery.trim()) return;
-  //   searchByKeyword.mutate({ keyword: keywordQuery }, {
-  //     onSuccess: (data) => {
-  //       navigate('/search', { state: { results: data, query: keywordQuery, type: 'keyword' } });
-  //     },
-  //   });
-  // };
-
-  // const isLoading = searchByKeyword.isPending; // TODO: Re-enable when keyword search is implemented
 
   return (
       <div className="min-h-screen bg-[#0A0A0A] text-white">
@@ -53,72 +37,15 @@ export const Home = () => {
             </motion.div>
 
             {/* Action Hub */}
-            <div className="grid grid-cols-1 lg:grid-cols-1 gap-8 items-start">
-              {/* Traditional Search */}
-              {/*<motion.div*/}
-              {/*    initial={{ opacity: 0, x: -20 }}*/}
-              {/*    animate={{ opacity: 1, x: 0 }}*/}
-              {/*    transition={{ duration: 0.6, delay: 0.3 }}*/}
-              {/*    whileHover={{ scale: 1.02 }}*/}
-              {/*>*/}
-              {/*  <Card>*/}
-              {/*    <CardContent className="p-10">*/}
-              {/*      <h3 className="text-sm font-bold uppercase tracking-widest text-[#1edc6a] mb-6 flex items-center gap-2">*/}
-              {/*        <span>🔍</span>*/}
-              {/*        Quick Product Search*/}
-              {/*      </h3>*/}
-              {/*      <form onSubmit={handleKeywordSearch} className="flex flex-col gap-4">*/}
-              {/*        <div className="relative group">*/}
-              {/*          <input*/}
-              {/*              value={keywordQuery}*/}
-              {/*              onChange={(e) => setKeywordQuery(e.target.value)}*/}
-              {/*              className="w-full h-16 bg-[#0A0A0A]/50 border-none focus:ring-2 focus:ring-[#1edc6a] rounded-lg px-6 text-lg transition-all placeholder:text-slate-500 text-white"*/}
-              {/*              placeholder="Search for a product (e.g. iPhone 15)"*/}
-              {/*              type="text"*/}
-              {/*              disabled={isLoading}*/}
-              {/*          />*/}
-              {/*        </div>*/}
-              {/*        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>*/}
-              {/*          <Button*/}
-              {/*              type="submit"*/}
-              {/*              disabled={isLoading}*/}
-              {/*              size="lg"*/}
-              {/*              className="w-full"*/}
-              {/*          >*/}
-              {/*            {isLoading ? 'Searching...' : 'Search Marketplace'}*/}
-              {/*          </Button>*/}
-              {/*        </motion.div>*/}
-              {/*      </form>*/}
-              {/*      <p className="mt-4 text-xs text-slate-500 text-center uppercase tracking-tighter">*/}
-              {/*        Compare over 100,000+ listings live*/}
-              {/*      </p>*/}
-              {/*    </CardContent>*/}
-              {/*  </Card>*/}
-              {/*</motion.div>*/}
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.3 }}
+                className="w-full"
+            >
+              <UnifiedSearch />
+            </motion.div>
 
-              {/* Link Comparison — scrapes URL and prefills search form */}
-              <motion.div
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.6, delay: 0.4 }}
-                  className="cursor-pointer"
-              >
-                <UrlPrefillForm />
-              </motion.div>
-            </div>
-
-            {/* Error Messages */}
-            {searchByKeyword.isError && (
-                <motion.div
-                    className="mt-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg"
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                >
-                  <p className="text-red-400 text-center">
-                    Search failed. Please try again or check your connection.
-                  </p>
-                </motion.div>
-            )}
           </div>
 
           {/* Background Decoration */}
