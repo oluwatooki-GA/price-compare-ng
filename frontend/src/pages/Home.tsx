@@ -1,11 +1,9 @@
-import { useSearch } from '../hooks/useSearch';
 import { motion } from 'framer-motion';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
 import { UnifiedSearch } from '../components/search/UnifiedSearch';
 
 export const Home = () => {
-  const { searchByKeyword } = useSearch();
 
   return (
       <div className="min-h-screen bg-[#0A0A0A] text-white">
