@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import { LogOut, Search, Bookmark, LogIn, UserPlus, Menu } from 'lucide-react';
+import { LogOut, Search, Bookmark, LogIn, UserPlus, Menu, Github } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export const Header = () => {
@@ -30,6 +30,15 @@ export const Header = () => {
               Saved
             </Link>
           )}
+          <a
+            href="https://github.com/oluwatooki-GA/price-compare-ng"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 text-sm font-medium text-white hover:text-[#1edc6a] transition-colors"
+          >
+            <Github className="w-4 h-4" />
+            GitHub
+          </a>
         </div>
 
         {/* Desktop Auth Buttons */}
@@ -125,6 +134,22 @@ export const Header = () => {
                   </Link>
                 </motion.div>
               )}
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                <a
+                  href="https://github.com/oluwatooki-GA/price-compare-ng"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 px-4 py-3 text-white hover:bg-[#161616] rounded-lg transition-colors"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <Github className="w-5 h-5" />
+                  GitHub Repo
+                </a>
+              </motion.div>
               <div className="border-t border-[#262626] pt-3 mt-3">
                 {isAuthenticated ? (
                   <motion.div
