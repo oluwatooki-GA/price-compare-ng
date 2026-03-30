@@ -26,18 +26,6 @@ export class NormalizationService {
   // before grouping.
   private readonly OUTLIER_STDEV_THRESHOLD = 2.0;
 
-  // Products whose names contain any of these tokens are accessories for the
-  // searched item, not the item itself. They are dropped before grouping so
-  // a search for "iPhone 15" never surfaces cases, cables, or screen protectors.
-  private readonly ACCESSORY_TERMS = new Set([
-    'case', 'cases', 'cover', 'covers', 'casing',
-    'protector', 'tempered', 'glass', 'film', 'screen',
-    'charger', 'charging', 'cable', 'cables', 'adapter', 'adaptor',
-    'holder', 'stand', 'mount', 'pouch', 'bag', 'sleeve',
-    'strap', 'band', 'bumper', 'skin', 'sticker',
-    'earphone', 'earphones', 'headphone', 'headphones', 'earbud', 'earbuds',
-    'airpod', 'airpods',
-  ]);
 
   /**
    * Calculate Jaccard similarity between two product names.
@@ -72,29 +60,10 @@ export class NormalizationService {
   groupSimilarProducts(products: ProductData[], _searchQuery = ''): ComparisonResult[] {
     console.log(`\n[NormalizationService] ── filtering ${products.length} products ──`);
 
-    // Step 1: drop accessories (cases, cables, chargers, screen protectors, etc.)
-    const accessories: ProductData[] = [];
-    const withoutAccessories = products.filter(p => {
-      if (this.isAccessory(p.name)) {
-        accessories.push(p);
-        return false;
-      }
-      return true;
-    });
-
-    if (accessories.length > 0) {
-      console.log(`[NormalizationService] Dropped ${accessories.length} accessor(ies):`);
-      accessories.forEach(p =>
-          console.log(`  ✗ [accessory]  "${p.name}" @ ₦${p.price} (${p.platform})`)
-      );
-    } else {
-      console.log(`[NormalizationService] No accessories dropped`);
-    }
-
-    // Step 2: drop price outliers from the flat list.
+    // Step 1: drop price outliers from the flat list.
     // A product priced below 10% or above 10x the median, or beyond 2σ, is
     // almost certainly a wrong-category result and is removed entirely.
-    const { core, outliers } = this.removeOutliers(withoutAccessories);
+    const { core, outliers } = this.removeOutliers(products);
 
     if (outliers.length > 0) {
       console.log(`[NormalizationService] Dropped ${outliers.length} price outlier(s):`);
@@ -105,7 +74,7 @@ export class NormalizationService {
       console.log(`[NormalizationService] No price outliers dropped`);
     }
 
-    console.log(`[NormalizationService] ${products.length} in → ${accessories.length} accessories + ${outliers.length} outliers removed → ${core.length} remaining`);
+    console.log(`[NormalizationService] ${products.length} in → ${outliers.length} outliers removed → ${core.length} remaining`);
 
     // Step 3: return each surviving product as its own ComparisonResult.
     // Similarity-based grouping is intentionally not applied here — each
@@ -198,19 +167,6 @@ export class NormalizationService {
     return { core, outliers };
   }
 
-  /**
-   * Returns true if the product name looks like an accessory for the searched
-   * item rather than the item itself.
-   */
-  private isAccessory(name: string): boolean {
-    const tokens = new Set(
-        name.toLowerCase().split(/[^a-z0-9]+/).filter(t => t.length > 0)
-    );
-    for (const term of this.ACCESSORY_TERMS) {
-      if (tokens.has(term)) return true;
-    }
-    return false;
-  }
 
   private median(values: number[]): number {
     const sorted = [...values].sort((a, b) => a - b);
@@ -236,7 +192,7 @@ export class NormalizationService {
       'of', 'with', 'by', 'from', 'as', 'is', 'was', 'are', 'were', 'been',
       'be', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would',
       'should', 'could', 'may', 'might', 'must', 'can', 'plus', 'extra',
-      'free', 'new', 'original', 'official', 'genuine', 'brand',
+      'free', 'new', 'original', 'official', 'genuine', 'brand','old'
     ]);
 
     const tokens = name
