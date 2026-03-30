@@ -7,7 +7,7 @@ import { authRouter } from './api/v1/auth/routes';
 import { searchRouter, disconnectSearchService } from './api/v1/search/routes';
 import { comparisonRouter } from './api/v1/comparisons/routes';
 import { errorHandler } from './middleware/errorHandler';
-import { disconnectRedis } from './middleware/rateLimiter';
+import { disconnectRedis, initRedisClient, enableRedisRateLimiting } from './middleware/rateLimiter';
 
 /**
  * Initialize Express application with middleware and routes
@@ -51,6 +51,10 @@ function createApp(): Application {
  * Start the Express server
  */
 async function startServer(): Promise<void> {
+  // Initialize Redis for rate limiting
+  await initRedisClient();
+  enableRedisRateLimiting();
+
   const app = createApp();
   const port = config.PORT;
 
@@ -63,20 +67,20 @@ async function startServer(): Promise<void> {
   // Graceful shutdown handler
   const shutdown = async (signal: string) => {
     console.log(`\n${signal} received, shutting down gracefully...`);
-    
+
     // Close server to stop accepting new connections
     server.close(async () => {
       console.log('HTTP server closed');
-      
+
       try {
         // Disconnect from Redis
         await disconnectRedis();
         console.log('Redis disconnected');
-        
+
         // Disconnect search service (Redis cache)
         await disconnectSearchService();
         console.log('Search service disconnected');
-        
+
         console.log('Shutdown complete');
         process.exit(0);
       } catch (error) {

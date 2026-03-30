@@ -8,7 +8,8 @@ import { ProductData, SearchFilters } from '../../../scrapers/base';
 import { ScraperRegistry } from '../../../scrapers/registry';
 import { NormalizationService, ComparisonResult } from './normalization';
 import { ValidationError, ScrapingError } from '../../../shared/errors';
-// import { PriceHistoryService } from '../comparisons/priceHistory'; // TODO: Re-enable when price history is implemented
+import { createClient } from 'redis';
+import { config } from '../../../config/env';
 
 /**
  * URL validation result
@@ -24,32 +25,45 @@ export interface UrlValidationResult {
 export class SearchService {
     private scraperRegistry: ScraperRegistry;
     private normalizationService: NormalizationService;
-    // private priceHistoryService: PriceHistoryService; // TODO: Re-enable when price history is implemented
-    private cache: Map<string, { data: any; timestamp: number }> = new Map();
-    private readonly CACHE_TTL_MS = 300000; // 5 minutes
+    private redisClient: ReturnType<typeof createClient> | null = null;
+    private readonly CACHE_TTL_SEC = 300; // 5 minutes
 
     constructor(
         scraperRegistry: ScraperRegistry,
         normalizationService: NormalizationService,
-        // priceHistoryService: PriceHistoryService // TODO: Re-enable when price history is implemented
     ) {
         this.scraperRegistry = scraperRegistry;
         this.normalizationService = normalizationService;
-        // this.priceHistoryService = priceHistoryService; // TODO: Re-enable when price history is implemented
     }
 
     /**
-     * Initialize the service (no-op for in-memory cache)
+     * Initialize Redis connection for caching
      */
     async connect(): Promise<void> {
-        // No-op
+        if (!config.REDIS_URL) {
+            console.log('Redis URL not configured, caching disabled');
+            return;
+        }
+
+        try {
+            this.redisClient = createClient({ url: config.REDIS_URL });
+            this.redisClient.on('error', (err) => console.error('Redis cache error:', err));
+            await this.redisClient.connect();
+            console.log('Redis cache connected');
+        } catch (error) {
+            console.warn('Failed to connect to Redis for caching:', error);
+            this.redisClient = null;
+        }
     }
 
     /**
-     * Close the service (no-op for in-memory cache)
+     * Close Redis connection
      */
     async disconnect(): Promise<void> {
-        this.cache.clear();
+        if (this.redisClient) {
+            await this.redisClient.quit().catch(() => {});
+            this.redisClient = null;
+        }
     }
 
     /**
@@ -91,6 +105,7 @@ export class SearchService {
         const cacheKey = `search:keyword:${normalizedKeyword.toLowerCase()}:${filterKey}`;
         const cachedResult = await this.getCachedResult(cacheKey);
         if (cachedResult) {
+            console.log(`Cache hit for keyword: "${normalizedKeyword}"`);
             return cachedResult;
         }
 
@@ -107,9 +122,6 @@ export class SearchService {
         }
 
         // Search all platforms concurrently
-        // Price and rating filters are passed into each scraper so they are applied
-        // at the API/query level. availableOnly has no server-side equivalent on any
-        // platform so it is applied here after results come back.
         const searchPromises = scrapers.map(async (scraper) => {
             try {
                 console.log(`Searching ${scraper.platformName} for "${normalizedKeyword}"`);
@@ -126,7 +138,6 @@ export class SearchService {
                 console.log(`${scraper.platformName} returned ${results.length} products`);
                 return results;
             } catch (error) {
-                // Requirement 2.5: Continue processing other platforms if one fails
                 console.error(
                     `Failed to search ${scraper.platformName} for "${normalizedKeyword}":`,
                     error instanceof Error ? error.message : String(error)
@@ -140,9 +151,8 @@ export class SearchService {
         // Flatten results from all platforms
         const allProducts = results.flat();
         console.log(`Total products from all platforms: ${allProducts.length}`);
-        console.log('PRODUCTS: ',allProducts)
-        // Only availableOnly needs service-level filtering — everything else was
-        // handled at the scraper level.
+
+        // Only availableOnly needs service-level filtering
         const filteredProducts = filters.availableOnly
             ? allProducts.filter(p => p.availability)
             : allProducts;
@@ -162,10 +172,6 @@ export class SearchService {
             console.log('No products found after applying filters');
             return [];
         }
-
-        // Record prices for all products (Requirement 6.1)
-        // TODO: Re-enable when price history feature is implemented
-        // await this.recordPricesForProducts(filteredProducts);
 
         // Group similar products
         let comparisonResults = this.normalizationService.groupSimilarProducts(filteredProducts, normalizedKeyword);
@@ -196,7 +202,6 @@ export class SearchService {
 
     /**
      * Extract product from URL and find similar products on other platforms
-     * Requirements 3.2, 3.3: Extract product data and search other platforms
      *
      * @param url - Product URL from a supported platform
      * @returns Comparison result with the original product and similar products from other platforms
@@ -215,6 +220,7 @@ export class SearchService {
         const cacheKey = `search:url:${url}`;
         const cachedResult = await this.getCachedResult(cacheKey);
         if (cachedResult && cachedResult.length > 0) {
+            console.log(`Cache hit for URL: ${url}`);
             return cachedResult[0];
         }
 
@@ -246,7 +252,6 @@ export class SearchService {
         const searchPromises = otherScrapers.map(async (otherScraper) => {
             try {
                 console.log(`URL Search: Searching ${otherScraper.platformName} for "${mainProduct.name}"`);
-                // Use the product name as search keyword
                 const results = await otherScraper.searchProducts(mainProduct.name, 5);
                 console.log(`URL Search: ${otherScraper.platformName} returned ${results.length} similar products`);
                 return results;
@@ -269,11 +274,7 @@ export class SearchService {
 
         console.log(`URL Search: Total products for comparison: ${allProducts.length}`);
 
-        // Record prices for all products (Requirement 6.1)
-        // TODO: Re-enable when price history feature is implemented
-        // await this.recordPricesForProducts(allProducts);
-
-        // Group similar products (should group the main product with its matches)
+        // Group similar products
         const comparisonResults = this.normalizationService.groupSimilarProducts(allProducts, mainProduct.name);
 
         // Find the group containing the main product
@@ -281,7 +282,7 @@ export class SearchService {
             result.products.some(p => p.url === mainProduct.url)
         );
 
-        // If no group found (shouldn't happen), create one with just the main product
+        // If no group found, create one with just the main product
         if (!mainComparison) {
             const bestValueIndex = 0;
             mainComparison = {
@@ -302,7 +303,6 @@ export class SearchService {
 
     /**
      * Validate that a URL belongs to a supported platform
-     * Requirements 3.1, 3.5: URL validation for supported platforms
      *
      * @param url - URL to validate
      * @returns Validation result with platform name if valid
@@ -331,67 +331,45 @@ export class SearchService {
     }
 
     /**
-     * Get cached search results
+     * Get cached search results from Redis
      *
      * @param cacheKey - Cache key
      * @returns Cached comparison results or null if not found
      */
     private async getCachedResult(cacheKey: string): Promise<ComparisonResult[] | null> {
-        const cached = this.cache.get(cacheKey);
-        if (cached && Date.now() - cached.timestamp < this.CACHE_TTL_MS) {
-            return cached.data;
+        if (!this.redisClient) {
+            return null;
         }
-        // Remove expired cache
-        if (cached) {
-            this.cache.delete(cacheKey);
+
+        try {
+            const cached = await this.redisClient.get(cacheKey);
+            if (cached) {
+                return JSON.parse(cached) as ComparisonResult[];
+            }
+        } catch (error) {
+            console.error('Cache get error:', error);
         }
         return null;
     }
 
     /**
-     * Cache search results with TTL
+     * Cache search results in Redis with TTL
      *
      * @param cacheKey - Cache key
      * @param results - Comparison results to cache
      */
     private async cacheResult(cacheKey: string, results: ComparisonResult[]): Promise<void> {
-        this.cache.set(cacheKey, {
-            data: results,
-            timestamp: Date.now()
-        });
+        if (!this.redisClient) {
+            return;
+        }
+
+        try {
+            await this.redisClient.setEx(cacheKey, this.CACHE_TTL_SEC, JSON.stringify(results));
+            console.log(`Cached results for key: ${cacheKey}`);
+        } catch (error) {
+            console.error('Cache set error:', error);
+        }
     }
-
-
-    /**
-     * Record prices for all products in the price history
-     * Requirement 6.1: Price history is recorded on retrieval
-     * TODO: Re-enable when price history feature is implemented
-     *
-     * @param products - Array of product data to record
-     */
-    // private async recordPricesForProducts(products: ProductData[]): Promise<void> {
-    //     // Disabled for now - will be re-enabled when price history feature is implemented
-    //     return;
-        
-    //     // Record prices concurrently, but don't fail the search if recording fails
-    //     const recordPromises = products.map(async (product) => {
-    //         try {
-    //             await this.priceHistoryService.recordPrice(
-    //                 product.url,
-    //                 product.platform,
-    //                 product.price,
-    //                 product.currency
-    //             );
-    //         } catch (error) {
-    //             console.error(
-    //                 `Failed to record price for ${product.platform} product:`,
-    //                 error instanceof Error ? error.message : String(error)
-    //             );
-    //         }
-    //     });
-
-    //     await Promise.all(recordPromises);
-    // }
 
     /**
      * Sort comparison results based on the specified criteria
