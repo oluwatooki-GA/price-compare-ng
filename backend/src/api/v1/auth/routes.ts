@@ -4,9 +4,14 @@ import { UserRegisterSchema, UserLoginSchema } from './schemas';
 import { AuthenticationError, ValidationError } from '../../../shared/errors';
 import { verifyToken } from '../../../config/security';
 import { unauthenticatedLimiter, authenticatedLimiter } from '../../../middleware/rateLimiter';
+import { RepositoryContainer } from '../../../repositories/RepositoryContainer';
+import { prisma } from '../../../config/database';
 
 const router = Router();
-const authService = new AuthService();
+
+// Initialize repository container and service
+const repositoryContainer = RepositoryContainer.getInstance(prisma);
+const authService = new AuthService(repositoryContainer);
 
 /**
  * Extended Request interface with user property

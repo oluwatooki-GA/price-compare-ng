@@ -1,7 +1,7 @@
-import { PrismaClient } from '@prisma/client';
 import { ValidationError, ResourceNotFoundError } from '../../../shared/errors';
 import { ComparisonResultResponse } from '../search/schemas';
 import { SavedComparisonResponse } from './schemas';
+import { SavedComparisonRepository } from '../../../repositories/SavedComparisonRepository';
 
 /**
  * ComparisonService handles saving, retrieving, and deleting user comparison results
@@ -12,16 +12,17 @@ import { SavedComparisonResponse } from './schemas';
  * - Enforce 50-comparison limit per user
  */
 export class ComparisonService {
-  private prisma: PrismaClient;
+  private savedComparisonRepository: SavedComparisonRepository;
 
-  constructor(prisma: PrismaClient) {
-    this.prisma = prisma;
+  constructor(savedComparisonRepository: SavedComparisonRepository) {
+    this.savedComparisonRepository = savedComparisonRepository;
   }
+
   /**
    * Save a comparison result for a user
    * Enforces a maximum of 50 saved comparisons per user
    * Prevents duplicate saves of the same product URL per user
-   * 
+   *
    * @param userId - The ID of the user saving the comparison
    * @param comparison - The comparison result to save
    * @returns The saved comparison with ID and metadata
@@ -38,23 +39,17 @@ export class ComparisonService {
     }
 
     // Check if this product is already saved by this user
-    const existingComparison = await this.prisma.savedComparison.findUnique({
-      where: {
-        userId_productUrl: {
-          userId,
-          productUrl,
-        },
-      },
-    });
+    const existingComparison = await this.savedComparisonRepository.findByUserAndProduct(
+      userId,
+      productUrl
+    );
 
     if (existingComparison) {
       throw new ValidationError('This product comparison is already saved');
     }
 
     // Check current comparison count for user
-    const currentCount = await this.prisma.savedComparison.count({
-      where: { userId }
-    });
+    const currentCount = await this.savedComparisonRepository.countByUserId(userId);
 
     // Enforce 50-comparison limit (Requirement 7.4)
     if (currentCount >= 50) {
@@ -68,14 +63,12 @@ export class ComparisonService {
 
     try {
       // Save the comparison
-      const savedComparison = await this.prisma.savedComparison.create({
-        data: {
-          userId,
-          searchQuery: comparison.searchQuery,
-          searchType,
-          comparisonData: JSON.stringify(comparison),
-          productUrl,
-        }
+      const savedComparison = await this.savedComparisonRepository.create({
+        userId,
+        searchQuery: comparison.searchQuery,
+        searchType,
+        comparisonData: JSON.stringify(comparison),
+        productUrl,
       });
 
       // Return formatted response
@@ -84,7 +77,7 @@ export class ComparisonService {
         searchQuery: savedComparison.searchQuery,
         searchType: savedComparison.searchType,
         comparisonData: JSON.parse(savedComparison.comparisonData) as ComparisonResultResponse,
-        createdAt: savedComparison.createdAt
+        createdAt: savedComparison.createdAt,
       };
     } catch (error: any) {
       // Handle unique constraint violations gracefully
@@ -97,15 +90,12 @@ export class ComparisonService {
 
   /**
    * Retrieve all saved comparisons for a user
-   * 
+   *
    * @param userId - The ID of the user
    * @returns Array of saved comparisons ordered by creation date (newest first)
    */
   async getUserComparisons(userId: number): Promise<SavedComparisonResponse[]> {
-    const savedComparisons = await this.prisma.savedComparison.findMany({
-      where: { userId },
-      orderBy: { createdAt: 'desc' }
-    });
+    const savedComparisons = await this.savedComparisonRepository.findByUserId(userId);
 
     return savedComparisons.map((comparison) => {
       return {
@@ -113,7 +103,7 @@ export class ComparisonService {
         searchQuery: comparison.searchQuery,
         searchType: comparison.searchType,
         comparisonData: JSON.parse(comparison.comparisonData) as ComparisonResultResponse,
-        createdAt: comparison.createdAt
+        createdAt: comparison.createdAt,
       };
     });
   }
@@ -121,7 +111,7 @@ export class ComparisonService {
   /**
    * Delete a saved comparison
    * Verifies that the comparison belongs to the user before deletion
-   * 
+   *
    * @param userId - The ID of the user
    * @param comparisonId - The ID of the comparison to delete
    * @returns true if deletion was successful
@@ -129,33 +119,25 @@ export class ComparisonService {
    */
   async deleteComparison(userId: number, comparisonId: number): Promise<boolean> {
     // Verify the comparison exists and belongs to the user
-    const comparison = await this.prisma.savedComparison.findUnique({
-      where: { id: comparisonId }
-    });
+    const comparison = await this.savedComparisonRepository.findById(comparisonId);
 
     if (!comparison) {
-      throw new ResourceNotFoundError(
-        `Comparison with ID ${comparisonId} not found`
-      );
+      throw new ResourceNotFoundError(`Comparison with ID ${comparisonId} not found`);
     }
 
     if (comparison.userId !== userId) {
-      throw new ResourceNotFoundError(
-        `Comparison with ID ${comparisonId} not found`
-      );
+      throw new ResourceNotFoundError(`Comparison with ID ${comparisonId} not found`);
     }
 
     // Delete the comparison
-    await this.prisma.savedComparison.delete({
-      where: { id: comparisonId }
-    });
+    await this.savedComparisonRepository.delete(comparisonId);
 
     return true;
   }
 
   /**
    * Determine search type based on the search query
-   * 
+   *
    * @param searchQuery - The search query string
    * @returns 'url' if query looks like a URL, 'keyword' otherwise
    */

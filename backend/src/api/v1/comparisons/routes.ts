@@ -4,10 +4,16 @@ import { SaveComparisonRequestSchema } from './schemas';
 import { ValidationError } from '../../../shared/errors';
 import { authenticateToken } from '../auth/routes';
 import { authenticatedLimiter } from '../../../middleware/rateLimiter';
+import { RepositoryContainer } from '../../../repositories/RepositoryContainer';
 import { prisma } from '../../../config/database';
 
 const router = Router();
-const comparisonService = new ComparisonService(prisma);
+
+// Initialize repository container and service
+const repositoryContainer = RepositoryContainer.getInstance(prisma);
+const comparisonService = new ComparisonService(
+  repositoryContainer.getSavedComparisonRepository()
+);
 
 /**
  * Extended Request interface with user property

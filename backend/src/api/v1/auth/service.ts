@@ -1,6 +1,6 @@
-import { prisma } from '../../../config/database';
-import { hashPassword, comparePassword, createAccessToken, verifyToken } from '../../../config/security';
+import { hashPassword, comparePassword, createAccessToken } from '../../../config/security';
 import { AuthenticationError, ValidationError } from '../../../shared/errors';
+import { RepositoryContainer } from '../../../repositories/RepositoryContainer';
 
 /**
  * User interface matching Prisma User model
@@ -18,6 +18,12 @@ export interface User {
  * Handles user registration, authentication, and token management
  */
 export class AuthService {
+  private repositoryContainer: RepositoryContainer;
+
+  constructor(repositoryContainer: RepositoryContainer) {
+    this.repositoryContainer = repositoryContainer;
+  }
+
   /**
    * Register a new user with email and password
    * @param email - User's email address
@@ -31,24 +37,18 @@ export class AuthService {
       throw new ValidationError('Password must be at least 8 characters');
     }
 
-    // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email }
-    });
+    const userRepository = this.repositoryContainer.getUserRepository();
 
-    if (existingUser) {
+    // Check if user already exists
+    const emailExists = await userRepository.existsByEmail(email);
+
+    if (emailExists) {
       throw new ValidationError('Email already registered');
     }
 
     // Hash password and create user
     const hashedPassword = await hashPassword(password);
-    
-    const user = await prisma.user.create({
-      data: {
-        email,
-        hashedPassword
-      }
-    });
+    const user = await userRepository.create({ email, hashedPassword });
 
     return user;
   }
@@ -60,10 +60,10 @@ export class AuthService {
    * @returns User object if credentials are valid, null otherwise
    */
   async authenticateUser(email: string, password: string): Promise<User | null> {
+    const userRepository = this.repositoryContainer.getUserRepository();
+
     // Find user by email
-    const user = await prisma.user.findUnique({
-      where: { email }
-    });
+    const user = await userRepository.findByEmail(email);
 
     if (!user) {
       return null;
@@ -71,7 +71,7 @@ export class AuthService {
 
     // Verify password
     const isPasswordValid = await comparePassword(password, user.hashedPassword);
-    
+
     if (!isPasswordValid) {
       return null;
     }
@@ -85,25 +85,15 @@ export class AuthService {
    * @returns JWT token string
    */
   async createAccessToken(userId: number): Promise<string> {
+    const userRepository = this.repositoryContainer.getUserRepository();
+
     // Get user email for token payload
-    const user = await prisma.user.findUnique({
-      where: { id: userId }
-    });
-    
+    const user = await userRepository.findById(userId);
+
     if (!user) {
       throw new AuthenticationError('User not found');
     }
-    
-    return createAccessToken(userId, user.email);
-  }
 
-  /**
-   * Verify a JWT token and return the user ID
-   * @param token - JWT token string
-   * @returns User ID if token is valid, null otherwise
-   */
-  verifyToken(token: string): number | null {
-    const payload = verifyToken(token);
-    return payload ? payload.userId : null;
+    return createAccessToken(userId, user.email);
   }
 }
