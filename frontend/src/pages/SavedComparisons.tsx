@@ -199,7 +199,7 @@ const GroupDetail = ({
               isBestValue={product.url === bestValueUrl}
             />
 
-            {/* Delete button — fixed position inside the card, never shifts layout */}
+            {/* Delete button - fixed position inside the card, never shifts layout */}
             <button
               onClick={() => onDelete(item.id)}
               disabled={isDeleting}

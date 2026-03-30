@@ -3,9 +3,10 @@
 <div align="center">
 
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)
-![React](https://img.shields.io/badge/React-18-cyan)
+![React](https://img.shields.io/badge/React-19-cyan)
 ![Node.js](https://img.shields.io/badge/Node.js-20-green)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-blue)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-blue)
+![Docker](https://img.shields.io/badge/Docker-Ready-blue)
 
 **Compare prices across Jumia, Konga & Jiji in seconds**
 
@@ -31,33 +32,89 @@ Nigerian e-commerce shoppers waste time switching between tabs to compare prices
 | **⭐ Best Value Badge** | Automatically highlights the best deal based on price, rating, and availability |
 | **📱 Mobile Responsive** | Fully optimized for mobile with animated hamburger menu |
 | **🔒 Secure Auth** | JWT-based authentication with bcrypt password hashing |
+| **🔄 Redis Caching** | Fast search results with intelligent caching |
 
-## 🏗️ Architecture Highlights
+## 🏗️ Architecture
 
-### Scalable Backend Design
-- **Modular architecture** with separated service layer for business logic
-- **Adapter pattern** for platform scrapers - easy to add new e-commerce platforms
-- **Rate limiting** to prevent API abuse (10 req/min unauth, 60 req/min auth)
-- **Zod validation** for type-safe API contracts
+```mermaid
+flowchart TB
+    subgraph Frontend
+        UI["React UI"]
+        Hooks["Custom Hooks"]
+        Query["TanStack Query"]
+    end
 
-### Modern Frontend
-- **TanStack Query** for intelligent data fetching and caching
-- **Framer Motion** for smooth animations
-- **React Hook Form + Zod** for performant form validation
-- **Custom hooks** for clean separation of concerns
+    subgraph Backend
+        Routes["Express Routes"]
+        Service["Search Service"]
+        Scraper1["Jumia Scraper"]
+        Scraper2["Konga Scraper"]
+        Scraper3["Jiji Scraper"]
+    end
+
+    subgraph Data
+        Redis[("Redis Cache")]
+        DB[("PostgreSQL DB")]
+    end
+
+    subgraph External
+        Jumia["Jumia.com.ng"]
+        Konga["Konga.com"]
+        Jiji["Jiji.ng"]
+    end
+
+    UI --> Hooks --> Query -->|"HTTP/JSON"| Routes
+    Routes --> Service -->|"GET/SET"| Redis
+    Routes -->|"SQL"| DB
+    Service --> Scraper1 & Scraper2 & Scraper3
+    Scraper1 -->|"Cheerio"| Jumia
+    Scraper2 -->|"Cheerio"| Konga
+    Scraper3 -->|"Cheerio"| Jiji
+```
+
+### Design Patterns
+
+- **Adapter Pattern** - Platform scrapers extend a base `ScraperAdapter` class for easy extensibility
+- **Service Layer** - Business logic separated from route handlers for reusability
+- **Repository Pattern** - Data access abstracted through Prisma ORM
+- **Rate Limiting** - Redis-backed rate limiting with fallback to in-memory storage
 
 ### Tech Stack
 
-**Backend:** Express.js, TypeScript, Prisma ORM, PostgreSQL, JWT, Cheerio
+**Backend:** Express.js, TypeScript, Prisma ORM, PostgreSQL, Redis, JWT, Cheerio
 
-**Frontend:** React 18, Vite, TailwindCSS, Framer Motion, TanStack Query, React Router
+**Frontend:** React 19, Vite, TailwindCSS, Framer Motion, TanStack Query, React Router
 
-## 🚀 Live Demo
+**Infrastructure:** Docker, Docker Compose
 
-Try it now: [price-compare-ng-frontend.onrender.com](https://price-compare-ng-frontend.onrender.com)
+## 🚀 Quick Start with Docker
 
-- **Test Account:** Register your own account or browse without login
-- **Sample Search:** Try searching for "iPhone 15" or paste any Jumia product link
+The easiest way to run this project is using Docker Compose:
+
+```bash
+# Clone the repo
+git clone https://github.com/oluwatooki-GA/price-compare-ng.git
+cd price-compare-ng
+
+# Start all services (postgres, redis, backend, frontend)
+docker compose up --build
+
+# Access the application
+# Frontend: http://localhost:5173
+# Backend API: http://localhost:3000
+# API Docs: http://localhost:3000/api-docs
+```
+
+That's it! Docker handles all dependencies including PostgreSQL and Redis.
+
+### Docker Services
+
+| Service | Port | Description |
+|---------|------|-------------|
+| Frontend | 5173 | React app with Vite HMR |
+| Backend | 3000 | Express API |
+| PostgreSQL | 5432 | Database |
+| Redis | 6379 | Caching & rate limiting |
 
 ## 📸 Screenshots
 
@@ -76,57 +133,6 @@ Try it now: [price-compare-ng-frontend.onrender.com](https://price-compare-ng-fr
   <img src="screenshots/register.png" alt="Register" width="300"/>
 </div>
 
-## 💡 What I Learned
-
-Building this project taught me:
-
-- **Web Scraping Challenges** - Handling dynamic content, rate limits, and HTML parsing across different site structures
-- **Database Design** - Designing schemas for many-to-many relationships and implementing unique constraints
-- **Type Safety** - Leveraging TypeScript across the full stack to catch errors at compile time
-- **State Management** - Using TanStack Query for server state vs React state for UI state
-- **Authentication Flow** - Implementing secure JWT auth with proper token management
-- **Mobile-First Design** - Building responsive UIs that work great on all devices
-- **Deployment** - Configuring CI/CD on Render with PostgreSQL migrations
-
-## 🔮 Future Enhancements
-
-- [ ] Price history tracking and alerts
-- [ ] Email notifications for price drops
-- [ ] Chrome extension for one-click price comparisons
-- [ ] Support for more Nigerian e-commerce platforms
-- [ ] Product review aggregation
-
-## 🛠️ Quick Start
-
-### Prerequisites
-- Node.js 18+
-- PostgreSQL 13+
-
-### Installation
-
-```bash
-# Clone the repo
-git clone https://github.com/yourusername/price-compare-ng.git
-cd price-compare-ng
-
-# Backend setup
-cd backend
-npm install
-cp .env.example .env
-# Update .env with your DATABASE_URL and JWT_SECRET
-npx prisma migrate dev
-npm run dev
-
-# Frontend setup (new terminal)
-cd frontend
-npm install
-cp .env.example .env
-# Update VITE_API_BASE_URL if needed
-npm run dev
-```
-
-Visit `http://localhost:5173`
-
 ## 📂 Project Structure
 
 ```
@@ -136,26 +142,68 @@ Visit `http://localhost:5173`
 │   │   ├── scrapers/      # Platform adapters (Jumia, Konga, Jiji)
 │   │   ├── middleware/    # Auth, rate limiting, error handling
 │   │   └── config/        # Environment validation
-│   └── prisma/           # Database schema and migrations
+│   ├── prisma/           # Database schema and migrations
+│   ├── Dockerfile        # Container definition
+│   └── .env.sample       # Environment template
 ├── frontend/
 │   ├── src/
 │   │   ├── components/   # Reusable UI components
 │   │   ├── pages/        # Route-level pages
 │   │   ├── hooks/        # Custom React hooks
 │   │   └── api/          # API client functions
+│   └── Dockerfile        # Container definition
+├── docker-compose.yml    # Service orchestration
+└── .env.sample          # Root environment template
+```
+
+## 🔧 Environment Variables
+
+Copy `.env.sample` to `.env` in each directory:
+
+**Backend (`backend/.env`):**
+```env
+PORT=3000
+NODE_ENV=development
+DATABASE_URL=postgresql://pricecompare:pricecompare123@postgres:5432/pricecompare
+JWT_SECRET=your-super-secret-jwt-key-minimum-32-characters-long
+REDIS_URL=redis://redis:6379
+CORS_ORIGINS=http://localhost:5173
+```
+
+**Frontend (`frontend/.env`):**
+```env
+VITE_API_BASE_URL=http://localhost:3000/api/v1
 ```
 
 ## 🧪 Testing
 
 ```bash
-# Backend tests
-cd backend
-npm test
+# Backend tests (inside container)
+docker compose exec backend npm test
 
 # Frontend linting
-cd frontend
-npm run lint
+docker compose exec frontend npm run lint
 ```
+
+## 🔮 Future Enhancements
+
+- [ ] Price history tracking and alerts
+- [ ] Email notifications for price drops
+- [ ] Chrome extension for one-click price comparisons
+- [ ] Support for more Nigerian e-commerce platforms
+- [ ] Product review aggregation
+
+## 💡 What I Learned
+
+Building this project taught me:
+
+- **Web Scraping Challenges** - Handling dynamic content, rate limits, and HTML parsing
+- **Database Design** - Designing schemas for many-to-many relationships
+- **Type Safety** - Leveraging TypeScript across the full stack
+- **State Management** - Using TanStack Query for server state vs React state
+- **Authentication Flow** - Implementing secure JWT auth with proper token management
+- **Docker Deployment** - Containerizing full-stack applications with orchestration
+- **Caching Strategies** - Implementing Redis for performance optimization
 
 ## 📄 License
 

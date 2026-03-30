@@ -125,7 +125,7 @@ export const UnifiedSearch = () => {
   const [editedName, setEditedName] = useState('');
   const [editedRating, setEditedRating] = useState('');
 
-  // Slider state — absolute NGN values
+  // Slider state - absolute NGN values
   const [sliderMin, setSliderMin] = useState(0);
   const [sliderMax, setSliderMax] = useState(0);
   const [rangeLow, setRangeLow] = useState(0);

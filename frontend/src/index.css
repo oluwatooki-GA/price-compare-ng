@@ -7,3 +7,18 @@
   --color-card-dark: #161616;
   --color-border-dark: #262626;
 }
+
+/* Prevent horizontal overflow on mobile */
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+/* Ensure inputs don't overflow */
+input, select, textarea {
+  max-width: 100%;
+}

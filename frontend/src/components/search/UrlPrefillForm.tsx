@@ -130,7 +130,7 @@ export const UrlPrefillForm = () => {
     const [editedName,   setEditedName]   = useState('');
     const [editedRating, setEditedRating] = useState('');
 
-    // Slider state — absolute NGN values
+    // Slider state - absolute NGN values
     const [sliderMin,  setSliderMin]  = useState(0);   // track bounds
     const [sliderMax,  setSliderMax]  = useState(0);
     const [rangeLow,   setRangeLow]   = useState(0);   // current handles
@@ -359,7 +359,7 @@ export const UrlPrefillForm = () => {
                                 </div>
 
                                 {/* Fine-tune inputs for keyboard editing */}
-                                <div className="flex gap-2 mt-2">
+                                <div className="grid grid-cols-5 gap-2 mt-2">
                                     <input
                                         type="number"
                                         value={rangeLow}
@@ -372,9 +372,10 @@ export const UrlPrefillForm = () => {
                                         onBlur={e => {
                                             if (e.target.value === '') setRangeLow(sliderMin);
                                         }}
-                                        className="flex-1 h-9 bg-[#0A0A0A]/50 border border-[#262626] focus:border-[#1edc6a] rounded-lg px-3 text-sm text-white outline-none"
+                                        className="col-span-2 h-9 bg-[#0A0A0A]/50 border border-[#262626] focus:border-[#1edc6a] rounded-lg px-2 sm:px-3 text-sm text-white outline-none w-full"
+                                        placeholder="Min"
                                     />
-                                    <span className="text-slate-600 self-center">–</span>
+                                    <span className="text-slate-600 self-center text-center">–</span>
                                     <input
                                         type="number"
                                         value={rangeHigh}
@@ -387,7 +388,8 @@ export const UrlPrefillForm = () => {
                                         onBlur={e => {
                                             if (e.target.value === '') setRangeHigh(sliderMax);
                                         }}
-                                        className="flex-1 h-9 bg-[#0A0A0A]/50 border border-[#262626] focus:border-[#1edc6a] rounded-lg px-3 text-sm text-white outline-none"
+                                        className="col-span-2 h-9 bg-[#0A0A0A]/50 border border-[#262626] focus:border-[#1edc6a] rounded-lg px-2 sm:px-3 text-sm text-white outline-none w-full"
+                                        placeholder="Max"
                                     />
                                 </div>
                             </div>

@@ -30,7 +30,7 @@ export const Home = () => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6, delay: 0.2 }}
               >
-                Instantly compare prices across Jumia, Konga and Jiji. Save money with every click. No more switching tabs—get the best deals in seconds.
+                Instantly compare prices across Jumia, Konga and Jiji. Save money with every click. No more switching tabs-get the best deals in seconds.
               </motion.p>
             </motion.div>
 
@@ -91,11 +91,10 @@ export const Home = () => {
                 PriceCompare NG helps you navigate the Nigerian e-commerce landscape with precision-engineered data tools.
               </p>
             </motion.div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 sm:gap-6 md:gap-8 max-w-4xl mx-auto">
               {[
                 { icon: '⇄', title: 'Price Comparison', desc: 'See live prices from top retailers side-by-side to find the absolute best deal available in real-time.' },
-                { icon: '★', title: 'Rating Analysis', desc: 'Aggregated reviews from multiple sources across the Nigerian web to ensure product quality and vendor trust.' },
-                { icon: '📈', title: 'Price History', desc: 'Track price trends over days and months to avoid artificial "sales" and buy at the lowest possible historical point.' }
+                { icon: '★', title: 'Rating Analysis', desc: 'Aggregated reviews from multiple sources across the Nigerian web to ensure product quality and vendor trust.' }
               ].map((feature, index) => (
                   <motion.div
                       key={index}

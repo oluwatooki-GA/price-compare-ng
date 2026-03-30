@@ -25,7 +25,7 @@ export const SearchFiltersComponent = ({
                                          isLoading,
                                        }: SearchFiltersProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  // Local draft — only committed to parent when Apply is clicked
+  // Local draft - only committed to parent when Apply is clicked
   const [draft, setDraft] = useState<SearchFilters>(filters);
 
   const updateDraft = (key: keyof SearchFilters, value: any) => {
@@ -76,7 +76,7 @@ export const SearchFiltersComponent = ({
             </div>
           </div>
 
-          {/* Sort — always visible, applies immediately */}
+          {/* Sort - always visible, applies immediately */}
           <div className="mb-4">
             <label className="block text-sm font-medium text-slate-300 mb-2">Sort By</label>
             <select
@@ -84,7 +84,7 @@ export const SearchFiltersComponent = ({
                 onChange={e => {
                   const val = e.target.value as SearchFilters['sortBy'];
                   updateDraft('sortBy', val);
-                  // Sort doesn't require a re-search — just re-order locally
+                  // Sort doesn't require a re-search - just re-order locally
                   onFiltersChange({ ...draft, sortBy: val });
                 }}
                 className="w-full px-3 py-2 bg-[#0A0A0A]/50 border border-[#262626] rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#1edc6a]"

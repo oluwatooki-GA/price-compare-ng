@@ -53,9 +53,9 @@ export const SearchResults = () => {
         { onSuccess: (data: ComparisonResult[]) => setResults(data) }
       );
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps — run once on mount
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps - run once on mount
 
-  // Sort the full result set client-side — no backend call
+  // Sort the full result set client-side - no backend call
   const sorted = useMemo(() => {
     return [...results].sort((a, b) => {
       const pa = a.products[0];
@@ -122,7 +122,7 @@ export const SearchResults = () => {
         },
         onError: (error: any) => {
           if (error.response?.status === 400 && error.response?.data?.message?.includes('limit')) {
-            toast.error('Limit reached — max 50 saved comparisons');
+            toast.error('Limit reached - max 50 saved comparisons');
           } else {
             toast.error(error.response?.data?.message ?? 'Failed to save, please try again');
           }
@@ -188,7 +188,7 @@ export const SearchResults = () => {
               {pinnedProducts.length} product{pinnedProducts.length !== 1 ? 's' : ''} for{' '}
               <span className="text-white font-medium">"{query}"</span>
               {totalPages > 1 && (
-                <span className="ml-2 text-slate-500">— page {page + 1} of {totalPages}</span>
+                <span className="ml-2 text-slate-500">- page {page + 1} of {totalPages}</span>
               )}
             </p>
           </div>
