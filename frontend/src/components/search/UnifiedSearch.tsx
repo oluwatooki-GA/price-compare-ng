@@ -219,13 +219,16 @@ export const UnifiedSearch = () => {
       setEditedName(trimmedInput);
       setPrefill(null);
 
-      // Default slider range (no scraped price)
-      const defaultMin = 1000;
-      const defaultMax = 500000;
+      // Slider goes up to 3M so the high handle can be dragged above 500K.
+      // Initial high handle at 500K means rangeHigh < sliderMax is true and
+      // the filter is actually sent — fixing the bug where maxPrice was never
+      // transmitted when both handle and slider max were 500K.
+      const defaultMin = 1_000;
+      const defaultMax = 3_000_000;
       setSliderMin(defaultMin);
       setSliderMax(defaultMax);
       setRangeLow(defaultMin);
-      setRangeHigh(defaultMax);
+      setRangeHigh(500_000);
 
       setStep('filters');
     }
