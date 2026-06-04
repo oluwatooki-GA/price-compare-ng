@@ -114,7 +114,7 @@ const RangeSlider = ({ min, max, low, high, onChange }: RangeSliderProps) => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const UnifiedSearch = () => {
-  const { searchByUrl, searchByKeyword } = useSearch();
+  const { searchByUrl, searchByKeyword, jobPhase } = useSearch();
   const navigate = useNavigate();
 
   const [step, setStep] = useState<Step>('input');
@@ -265,7 +265,11 @@ export const UnifiedSearch = () => {
     }
   };
 
-  const isSearching = searchByKeyword.isPending;
+  const isSearching = searchByKeyword.isPending || searchByUrl.isPending;
+  const searchingLabel =
+    jobPhase === 'scraping' ? 'Scraping…' :
+    jobPhase === 'queued'   ? 'Queued…'   :
+                              'Loading…';
 
   return (
     <Card>
@@ -306,7 +310,9 @@ export const UnifiedSearch = () => {
                   className="w-full cursor-pointer"
                 >
                   {step === 'loading' ? (
-                    <span className="flex items-center gap-2"><Loader2 className="w-5 h-5 animate-spin" />Loading...</span>
+                    <span className="flex items-center gap-2">
+                      <Loader2 className="w-5 h-5 animate-spin" />{searchingLabel}
+                    </span>
                   ) : (
                     'Continue'
                   )}
@@ -452,7 +458,7 @@ export const UnifiedSearch = () => {
                   size="lg"
                   className="w-full cursor-pointer"
                 >
-                  {isSearching ? 'Searching…' : 'Find Similar Products'}
+                  {isSearching ? searchingLabel : 'Find Similar Products'}
                 </Button>
               </motion.div>
             </motion.form>

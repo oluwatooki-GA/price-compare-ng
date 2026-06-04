@@ -19,7 +19,7 @@ export const SearchResults = () => {
   const [searchParams] = useSearchParams();
   const { isAuthenticated } = useAuth();
   const { saveComparison } = useComparisons();
-  const { searchByKeyword } = useSearch();
+  const { searchByKeyword, jobPhase } = useSearch();
 
   // Query from state (normal navigation) or URL param (direct link / refresh)
   const query = (location.state?.query as string | undefined)
@@ -144,6 +144,10 @@ export const SearchResults = () => {
   }
 
   if (searchByKeyword.isPending) {
+    const phaseLabel =
+      jobPhase === 'scraping' ? `Scraping platforms for "${query}"…` :
+      jobPhase === 'queued'   ? 'Job queued, waiting for worker…' :
+                                `Loading results for "${query}"…`;
     return (
       <div className="min-h-screen bg-[#0A0A0A] flex items-center justify-center">
         <motion.div
@@ -152,7 +156,7 @@ export const SearchResults = () => {
           className="text-slate-400 text-center"
         >
           <div className="text-3xl mb-4 animate-spin inline-block">⟳</div>
-          <p>Loading results for "{query}"…</p>
+          <p>{phaseLabel}</p>
         </motion.div>
       </div>
     );
