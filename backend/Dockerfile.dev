@@ -1,0 +1,23 @@
+# Backend Development Dockerfile
+# Uses prisma db push to auto-sync schema on every start (no migration files needed).
+# For production, use Dockerfile which runs prisma migrate deploy.
+
+FROM node:20-slim
+
+RUN apt-get update && apt-get install -y openssl python3 make g++ build-essential && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY .env ./
+COPY package*.json ./
+COPY prisma ./prisma/
+
+RUN npm install --ignore-scripts && \
+    npx prisma generate && \
+    npm rebuild bcrypt
+
+COPY . .
+
+EXPOSE 3000
+
+CMD ["sh", "-c", "sleep 5 && npx prisma db push --accept-data-loss && npm run dev"]

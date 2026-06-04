@@ -20,7 +20,9 @@ services:
     restart: always
 
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
     ports:
       - "3000:3000"
     env_file:
@@ -37,7 +39,9 @@ services:
     restart: on-failure
 
   worker:
-    build: ./backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
     command: sh -c "sleep 8 && npm run worker"
     env_file:
       - ./backend/.env
