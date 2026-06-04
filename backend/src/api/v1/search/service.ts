@@ -27,6 +27,7 @@ export class SearchService {
     private normalizationService: NormalizationService;
     private redisClient: ReturnType<typeof createClient> | null = null;
     private readonly CACHE_TTL_SEC = 300; // 5 minutes
+    private readonly SCRAPER_TIMEOUT_MS = 15_000;
 
     constructor(
         scraperRegistry: ScraperRegistry,
@@ -101,6 +102,7 @@ export class SearchService {
             platforms: filters.platforms?.slice().sort(),
             minRating: filters.minRating,
             availableOnly: filters.availableOnly,
+            limit: filters.limit,
         });
         const cacheKey = `search:keyword:${normalizedKeyword.toLowerCase()}:${filterKey}`;
         const cachedResult = await this.getCachedResult(cacheKey);
@@ -121,7 +123,7 @@ export class SearchService {
             throw new ScrapingError('No platform scrapers are registered or match the filter criteria');
         }
 
-        // Search all platforms concurrently
+        // Search all platforms concurrently, each with an individual timeout
         const searchPromises = scrapers.map(async (scraper) => {
             try {
                 console.log(`Searching ${scraper.platformName} for "${normalizedKeyword}"`);
@@ -130,10 +132,9 @@ export class SearchService {
                     maxPrice: filters.maxPrice,
                     minRating: filters.minRating,
                 };
-                const results = await scraper.searchProducts(
-                    normalizedKeyword,
-                    filters.limit ?? 10,
-                    scraperFilters
+                const results = await this.withTimeout(
+                    scraper.searchProducts(normalizedKeyword, filters.limit ?? 10, scraperFilters),
+                    scraper.platformName
                 );
                 console.log(`${scraper.platformName} returned ${results.length} products`);
                 return results;
@@ -252,7 +253,10 @@ export class SearchService {
         const searchPromises = otherScrapers.map(async (otherScraper) => {
             try {
                 console.log(`URL Search: Searching ${otherScraper.platformName} for "${mainProduct.name}"`);
-                const results = await otherScraper.searchProducts(mainProduct.name, 5);
+                const results = await this.withTimeout(
+                    otherScraper.searchProducts(mainProduct.name, 5),
+                    otherScraper.platformName
+                );
                 console.log(`URL Search: ${otherScraper.platformName} returned ${results.length} similar products`);
                 return results;
             } catch (error) {
@@ -328,6 +332,18 @@ export class SearchService {
         }
 
         return { isValid: false };
+    }
+
+    private withTimeout<T>(promise: Promise<T>, label: string): Promise<T> {
+        return Promise.race([
+            promise,
+            new Promise<never>((_, reject) =>
+                setTimeout(
+                    () => reject(new Error(`${label} timed out after ${this.SCRAPER_TIMEOUT_MS}ms`)),
+                    this.SCRAPER_TIMEOUT_MS
+                )
+            ),
+        ]);
     }
 
     /**
