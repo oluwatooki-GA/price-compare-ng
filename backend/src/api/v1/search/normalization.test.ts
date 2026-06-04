@@ -70,7 +70,11 @@ describe('NormalizationService', () => {
   });
 
   describe('groupSimilarProducts', () => {
-    test('groups similar products together', () => {
+    // Each product is returned as its own standalone ComparisonResult.
+    // Similarity-based grouping is intentionally disabled; the frontend
+    // handles best-value selection across all results.
+
+    test('returns each product as its own result', () => {
       const products: ProductData[] = [
         createProduct('Samsung Galaxy S21 128GB', 'jumia', 250000),
         createProduct('Samsung Galaxy S21 256GB', 'konga', 280000),
@@ -80,40 +84,26 @@ describe('NormalizationService', () => {
 
       const results = service.groupSimilarProducts(products);
 
-      // Should create 2 groups: Samsung products and iPhone products
-      expect(results.length).toBe(2);
-      
-      // Each group should have 2 products
-      expect(results[0].products.length).toBe(2);
-      expect(results[1].products.length).toBe(2);
-    });
-
-    test('does not group dissimilar products', () => {
-      const products: ProductData[] = [
-        createProduct('Samsung Galaxy S21', 'jumia', 250000),
-        createProduct('iPhone 13 Pro', 'konga', 450000),
-        createProduct('Sony Headphones WH-1000XM4', 'jumia', 120000)
-      ];
-
-      const results = service.groupSimilarProducts(products);
-
-      // Should create 3 separate groups
-      expect(results.length).toBe(3);
+      // Each product is its own result (after outlier removal)
+      expect(results.length).toBe(products.length);
       results.forEach(result => {
         expect(result.products.length).toBe(1);
+        expect(result.bestValueIndex).toBe(0);
       });
     });
 
-    test('sets bestValueIndex correctly', () => {
+    test('removes price outliers', () => {
       const products: ProductData[] = [
-        createProduct('Samsung Galaxy S21', 'jumia', 280000),
-        createProduct('Samsung Galaxy S21', 'konga', 250000) // Lower price
+        createProduct('Samsung Galaxy S21', 'jumia', 250000),
+        createProduct('Samsung Galaxy S21', 'konga', 260000),
+        createProduct('Samsung Galaxy S21', 'jiji', 255000),
+        // Extreme outlier — more than 10x the median
+        createProduct('Samsung Galaxy S21 Bundle', 'jumia', 10000000),
       ];
 
       const results = service.groupSimilarProducts(products);
 
-      expect(results.length).toBe(1);
-      expect(results[0].bestValueIndex).toBe(1); // Konga has lower price
+      expect(results.length).toBe(3); // outlier removed
     });
 
     test('handles empty product array', () => {
