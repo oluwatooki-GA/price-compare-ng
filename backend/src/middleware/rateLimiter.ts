@@ -1,45 +1,7 @@
 import rateLimit from 'express-rate-limit';
 import RedisStore from 'rate-limit-redis';
-import { createClient } from 'redis';
-import { config } from '../config/env';
+import { redisClient } from '../config/redis';
 
-// Redis client for rate limiting
-let redisClient: ReturnType<typeof createClient> | null = null;
-
-/**
- * Initialize Redis client for rate limiting
- */
-export async function initRedisClient(): Promise<void> {
-  if (!config.REDIS_URL) {
-    console.log('Redis URL not configured, using in-memory rate limiting');
-    return;
-  }
-
-  try {
-    redisClient = createClient({ url: config.REDIS_URL });
-    redisClient.on('error', (err) => console.error('Redis Client Error:', err));
-    await redisClient.connect();
-    console.log('Redis rate limiter connected');
-  } catch (error) {
-    console.warn('Failed to connect Redis for rate limiting, using in-memory:', error);
-    redisClient = null;
-  }
-}
-
-/**
- * Create Redis store or undefined (falls back to memory)
- */
-function createRedisStore() {
-  if (!redisClient) return undefined;
-
-  return new RedisStore({
-    sendCommand: (...args: string[]) => redisClient!.sendCommand(args),
-  });
-}
-
-/**
- * Rate limiter for unauthenticated requests
- */
 export const unauthenticatedLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 10,
@@ -55,9 +17,6 @@ export const unauthenticatedLimiter = rateLimit({
   },
 });
 
-/**
- * Rate limiter for authenticated requests
- */
 export const authenticatedLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 60,
@@ -79,32 +38,19 @@ export const authenticatedLimiter = rateLimit({
   },
 });
 
-/**
- * Update rate limiters to use Redis (call after Redis is connected)
- */
 export function enableRedisRateLimiting(): void {
-  const store = createRedisStore();
-  if (store) {
-    (unauthenticatedLimiter as any).store = store;
-    (authenticatedLimiter as any).store = store;
-    console.log('Redis rate limiting enabled');
-  }
+  if (!redisClient) return;
+  const store = new RedisStore({
+    sendCommand: (...args: string[]) => redisClient.sendCommand(args),
+  });
+  (unauthenticatedLimiter as unknown as { store: unknown }).store = store;
+  (authenticatedLimiter  as unknown as { store: unknown }).store = store;
+  console.log('Redis rate limiting enabled');
 }
 
-/**
- * Gracefully disconnect Redis client
- */
-export async function disconnectRedis(): Promise<void> {
-  if (redisClient) {
-    await redisClient.quit().catch(() => {});
-    redisClient = null;
-  }
-}
-
-// Export for compatibility with tests
-export { redisClient };
-
-/** Returns the rate-limiter Redis client so other services can reuse the connection. */
-export function getRedisClient(): ReturnType<typeof createClient> | null {
+export function getRedisClient() {
   return redisClient;
 }
+
+// Keep for backward compatibility with existing tests
+export { redisClient };

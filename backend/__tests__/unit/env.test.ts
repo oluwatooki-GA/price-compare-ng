@@ -1,7 +1,6 @@
 import { describe, test, expect } from 'vitest';
 import { z } from 'zod';
 
-// Import the schema directly for testing
 const envSchema = z.object({
   PORT: z.string().default('3000').transform(Number),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
@@ -9,7 +8,7 @@ const envSchema = z.object({
   JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
   JWT_EXPIRES_IN: z.string().default('1h'),
   REDIS_URL: z.string().min(1, 'REDIS_URL is required'),
-  CORS_ORIGINS: z.string().min(1, 'CORS_ORIGINS is required').transform((val) => 
+  CORS_ORIGINS: z.string().min(1, 'CORS_ORIGINS is required').transform((val) =>
     val.split(',').map(origin => origin.trim())
   ),
 });
@@ -22,9 +21,7 @@ describe('Environment Configuration Schema', () => {
       REDIS_URL: 'redis://localhost:6379',
       CORS_ORIGINS: 'http://localhost:3000,http://localhost:5173',
     };
-
     const result = envSchema.parse(validEnv);
-
     expect(result.DATABASE_URL).toBe('postgresql://localhost:5432/test');
     expect(result.JWT_SECRET).toBe('this-is-a-very-long-secret-key-for-testing-purposes');
     expect(result.REDIS_URL).toBe('redis://localhost:6379');
@@ -38,9 +35,7 @@ describe('Environment Configuration Schema', () => {
       REDIS_URL: 'redis://localhost:6379',
       CORS_ORIGINS: 'http://localhost:3000',
     };
-
     const result = envSchema.parse(validEnv);
-
     expect(result.PORT).toBe(3000);
     expect(result.NODE_ENV).toBe('development');
     expect(result.JWT_EXPIRES_IN).toBe('1h');
@@ -53,7 +48,6 @@ describe('Environment Configuration Schema', () => {
       REDIS_URL: 'redis://localhost:6379',
       CORS_ORIGINS: 'http://localhost:3000',
     };
-
     expect(() => envSchema.parse(invalidEnv)).toThrow();
   });
 
@@ -63,7 +57,6 @@ describe('Environment Configuration Schema', () => {
       REDIS_URL: 'redis://localhost:6379',
       CORS_ORIGINS: 'http://localhost:3000',
     };
-
     expect(() => envSchema.parse(invalidEnv)).toThrow();
   });
 
@@ -73,7 +66,6 @@ describe('Environment Configuration Schema', () => {
       JWT_SECRET: 'this-is-a-very-long-secret-key-for-testing-purposes',
       CORS_ORIGINS: 'http://localhost:3000',
     };
-
     expect(() => envSchema.parse(invalidEnv)).toThrow();
   });
 
@@ -83,7 +75,6 @@ describe('Environment Configuration Schema', () => {
       JWT_SECRET: 'this-is-a-very-long-secret-key-for-testing-purposes',
       REDIS_URL: 'redis://localhost:6379',
     };
-
     expect(() => envSchema.parse(invalidEnv)).toThrow();
   });
 
@@ -94,14 +85,8 @@ describe('Environment Configuration Schema', () => {
       REDIS_URL: 'redis://localhost:6379',
       CORS_ORIGINS: 'http://localhost:3000, http://localhost:5173, http://example.com',
     };
-
     const result = envSchema.parse(validEnv);
-
-    expect(result.CORS_ORIGINS).toEqual([
-      'http://localhost:3000',
-      'http://localhost:5173',
-      'http://example.com'
-    ]);
+    expect(result.CORS_ORIGINS).toEqual(['http://localhost:3000', 'http://localhost:5173', 'http://example.com']);
   });
 
   test('should transform PORT to number', () => {
@@ -112,9 +97,7 @@ describe('Environment Configuration Schema', () => {
       REDIS_URL: 'redis://localhost:6379',
       CORS_ORIGINS: 'http://localhost:3000',
     };
-
     const result = envSchema.parse(validEnv);
-
     expect(result.PORT).toBe(8080);
     expect(typeof result.PORT).toBe('number');
   });
@@ -127,15 +110,9 @@ describe('Environment Configuration Schema', () => {
       REDIS_URL: 'redis://localhost:6379',
       CORS_ORIGINS: 'http://localhost:3000',
     };
-
     const result = envSchema.parse(validEnv);
     expect(result.NODE_ENV).toBe('production');
-
-    const invalidEnv = {
-      ...validEnv,
-      NODE_ENV: 'invalid',
-    };
-
+    const invalidEnv = { ...validEnv, NODE_ENV: 'invalid' };
     expect(() => envSchema.parse(invalidEnv)).toThrow();
   });
 });

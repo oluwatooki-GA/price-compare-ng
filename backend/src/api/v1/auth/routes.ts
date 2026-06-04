@@ -1,5 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { AuthService } from './service';
+import { AuthService } from '../../../services/AuthService';
 import { UserRegisterSchema, UserLoginSchema } from './schemas';
 import { AuthenticationError, ValidationError } from '../../../shared/errors';
 import { verifyToken } from '../../../config/security';

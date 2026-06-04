@@ -1,22 +1,12 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { prisma } from '../../../config/database';
-import { ResourceNotFoundError } from '../../../shared/errors';
+import { searchSubmitService } from '../search/routes';
 
 const router = Router();
 
 router.get('/:jobId', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const job = await prisma.scrapeJob.findUnique({ where: { id: req.params.jobId } });
-    if (!job) throw new ResourceNotFoundError(`Job ${req.params.jobId} not found`);
-
-    res.json({
-      jobId:       job.id,
-      status:      job.status,
-      results:     job.results ?? null,
-      error:       job.error ?? null,
-      createdAt:   job.createdAt,
-      completedAt: job.completedAt ?? null,
-    });
+    const result = await searchSubmitService.getJobStatus(req.params.jobId);
+    res.json(result);
   } catch (err) {
     next(err);
   }

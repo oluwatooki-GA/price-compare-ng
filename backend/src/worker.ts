@@ -1,33 +1,28 @@
 import 'dotenv/config';
 import { Worker } from 'bullmq';
-import { createClient } from 'redis';
 import { prisma } from './config/database';
-import { config } from './config/env';
+import { redisClient, connectRedis } from './config/redis';
 import { ScraperRegistry } from './scrapers/registry';
 import { JumiaScraper } from './scrapers/jumia';
 import { JijiScraper } from './scrapers/jiji';
 import { KongaScraper } from './scrapers/konga';
 import { NormalizationService } from './api/v1/search/normalization';
-import { SearchService } from './api/v1/search/service';
+import { ScraperService } from './services/ScraperService';
 import { bullmqConnection } from './queue';
 import type { ScrapeJobData } from './queue/types';
 
 async function startWorker(): Promise<void> {
-  // Redis client for SearchService result caching
-  const redisCache = createClient({ url: config.REDIS_URL });
-  redisCache.on('error', err => console.error('[worker] Redis error:', err));
-  await redisCache.connect();
+  await connectRedis();
 
-  // Mirror the scraper setup in search/routes.ts
   const scraperRegistry = new ScraperRegistry();
   scraperRegistry.registerScraper(new JumiaScraper());
   scraperRegistry.registerScraper(new JijiScraper());
   scraperRegistry.registerScraper(new KongaScraper());
 
-  const searchService = new SearchService(
+  const scraperService = new ScraperService(
     scraperRegistry,
     new NormalizationService(),
-    redisCache,
+    redisClient,
   );
 
   const worker = new Worker<ScrapeJobData>(
@@ -42,9 +37,9 @@ async function startWorker(): Promise<void> {
 
       let results;
       if (queryType === 'keyword') {
-        results = await searchService.searchByKeyword(query, filters);
+        results = await scraperService.searchByKeyword(query, filters);
       } else {
-        results = [await searchService.searchByUrl(query)];
+        results = [await scraperService.searchByUrl(query)];
       }
 
       await prisma.scrapeJob.update({
@@ -65,29 +60,22 @@ async function startWorker(): Promise<void> {
     },
   );
 
-  // Only mark FAILED in DB once all BullMQ retry attempts are exhausted
   worker.on('failed', async (job, err) => {
     if (!job) return;
     const maxAttempts = job.opts.attempts ?? 1;
     if (job.attemptsMade >= maxAttempts) {
       console.error(`[worker] Job ${job.data.jobDbId} permanently failed:`, err.message);
       await prisma.scrapeJob
-        .update({
-          where: { id: job.data.jobDbId },
-          data: { status: 'FAILED', error: err.message },
-        })
+        .update({ where: { id: job.data.jobDbId }, data: { status: 'FAILED', error: err.message } })
         .catch(console.error);
     }
   });
 
   worker.on('error', err => console.error('[worker] Worker error:', err));
-
   console.log('[worker] Started — waiting for scrape jobs...');
 
   const shutdown = async () => {
-    console.log('[worker] Shutting down...');
     await worker.close();
-    await redisCache.quit().catch(() => {});
     await prisma.$disconnect();
     process.exit(0);
   };

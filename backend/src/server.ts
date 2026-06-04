@@ -6,12 +6,13 @@ import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
 import { ExpressAdapter } from '@bull-board/express';
 import { config } from './config/env';
 import { swaggerSpec } from './config/swagger';
+import { connectRedis, disconnectRedis } from './config/redis';
 import { authRouter } from './api/v1/auth/routes';
 import { searchRouter, disconnectSearchService } from './api/v1/search/routes';
 import { comparisonRouter } from './api/v1/comparisons/routes';
 import { jobsRouter } from './api/v1/jobs/routes';
 import { errorHandler } from './middleware/errorHandler';
-import { disconnectRedis, initRedisClient, enableRedisRateLimiting } from './middleware/rateLimiter';
+import { enableRedisRateLimiting } from './middleware/rateLimiter';
 import { scrapeQueue } from './queue';
 
 function createApp(): Application {
@@ -30,7 +31,6 @@ function createApp(): Application {
     customSiteTitle: 'PriceCompare NG API Docs',
   }));
 
-  // Bull Board — queue monitoring UI at /admin/queues
   const boardAdapter = new ExpressAdapter();
   boardAdapter.setBasePath('/admin/queues');
   createBullBoard({ queues: [new BullMQAdapter(scrapeQueue)], serverAdapter: boardAdapter });
@@ -47,7 +47,7 @@ function createApp(): Application {
 }
 
 async function startServer(): Promise<void> {
-  await initRedisClient();
+  await connectRedis();
   enableRedisRateLimiting();
 
   const app = createApp();

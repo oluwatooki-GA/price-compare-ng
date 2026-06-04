@@ -1,9 +1,5 @@
-/**
- * Unit tests for Jumia scraper
- */
-
 import { describe, test, expect, beforeEach } from 'vitest';
-import { JumiaScraper } from './jumia';
+import { JumiaScraper } from '../../../src/scrapers/jumia';
 
 describe('JumiaScraper', () => {
   let scraper: JumiaScraper;
@@ -40,9 +36,7 @@ describe('JumiaScraper', () => {
 
   describe('price normalization', () => {
     test('normalizes price with naira symbol and commas', () => {
-      // Access private method through type assertion for testing
       const normalizePrice = (scraper as any).normalizePrice.bind(scraper);
-      
       expect(normalizePrice('₦ 1,234.56')).toBe(1234.56);
       expect(normalizePrice('₦1,234')).toBe(1234);
       expect(normalizePrice('₦ 1234')).toBe(1234);
@@ -50,21 +44,18 @@ describe('JumiaScraper', () => {
 
     test('normalizes price with NGN prefix', () => {
       const normalizePrice = (scraper as any).normalizePrice.bind(scraper);
-      
       expect(normalizePrice('NGN 1234.56')).toBe(1234.56);
       expect(normalizePrice('NGN 1,234')).toBe(1234);
     });
 
     test('normalizes price with just numbers', () => {
       const normalizePrice = (scraper as any).normalizePrice.bind(scraper);
-      
       expect(normalizePrice('1234.56')).toBe(1234.56);
       expect(normalizePrice('1,234')).toBe(1234);
     });
 
     test('returns null for invalid prices', () => {
       const normalizePrice = (scraper as any).normalizePrice.bind(scraper);
-      
       expect(normalizePrice('')).toBeNull();
       expect(normalizePrice('invalid')).toBeNull();
       expect(normalizePrice('₦ 0')).toBeNull();
@@ -75,7 +66,6 @@ describe('JumiaScraper', () => {
   describe('rating extraction', () => {
     test('extracts rating from text', () => {
       const extractRating = (scraper as any).extractRating.bind(scraper);
-      
       expect(extractRating('4.5 out of 5')).toBe(4.5);
       expect(extractRating('4.5')).toBe(4.5);
       expect(extractRating('3')).toBe(3);
@@ -83,17 +73,15 @@ describe('JumiaScraper', () => {
 
     test('returns null for invalid ratings', () => {
       const extractRating = (scraper as any).extractRating.bind(scraper);
-      
       expect(extractRating('')).toBeNull();
       expect(extractRating('no rating')).toBeNull();
-      expect(extractRating('6.0')).toBeNull(); // Out of range
+      expect(extractRating('6.0')).toBeNull();
     });
   });
 
   describe('review count extraction', () => {
     test('extracts review count from text', () => {
       const extractReviewCount = (scraper as any).extractReviewCount.bind(scraper);
-      
       expect(extractReviewCount('(123)')).toBe(123);
       expect(extractReviewCount('123 reviews')).toBe(123);
       expect(extractReviewCount('123 verified ratings')).toBe(123);
@@ -101,7 +89,6 @@ describe('JumiaScraper', () => {
 
     test('returns 0 for no reviews', () => {
       const extractReviewCount = (scraper as any).extractReviewCount.bind(scraper);
-      
       expect(extractReviewCount('')).toBe(0);
       expect(extractReviewCount('no reviews')).toBe(0);
     });

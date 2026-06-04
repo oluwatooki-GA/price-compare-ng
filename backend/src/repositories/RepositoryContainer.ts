@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import { UserRepository } from './UserRepository';
 import { SavedComparisonRepository } from './SavedComparisonRepository';
 import { PriceHistoryRepository } from './PriceHistoryRepository';
+import { ScrapeJobRepository } from './ScrapeJobRepository';
 
 /**
  * Central container for all repository instances
@@ -14,12 +15,14 @@ export class RepositoryContainer {
   private userRepository: UserRepository;
   private savedComparisonRepository: SavedComparisonRepository;
   private priceHistoryRepository: PriceHistoryRepository;
+  private scrapeJobRepository: ScrapeJobRepository;
 
   private constructor(prisma: PrismaClient) {
     this.prisma = prisma;
     this.userRepository = new UserRepository(prisma);
     this.savedComparisonRepository = new SavedComparisonRepository(prisma);
     this.priceHistoryRepository = new PriceHistoryRepository(prisma);
+    this.scrapeJobRepository = new ScrapeJobRepository(prisma);
   }
 
   static getInstance(prisma: PrismaClient): RepositoryContainer {
@@ -39,6 +42,10 @@ export class RepositoryContainer {
 
   getPriceHistoryRepository(): PriceHistoryRepository {
     return this.priceHistoryRepository;
+  }
+
+  getScrapeJobRepository(): ScrapeJobRepository {
+    return this.scrapeJobRepository;
   }
 
   /**
