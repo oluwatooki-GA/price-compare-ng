@@ -103,3 +103,8 @@ export async function disconnectRedis(): Promise<void> {
 
 // Export for compatibility with tests
 export { redisClient };
+
+/** Returns the rate-limiter Redis client so other services can reuse the connection. */
+export function getRedisClient(): ReturnType<typeof createClient> | null {
+  return redisClient;
+}

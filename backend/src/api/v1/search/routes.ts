@@ -2,7 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { SearchService } from './service';
 import { KeywordSearchRequestSchema, UrlSearchRequestSchema } from './schemas';
 import { ValidationError } from '../../../shared/errors';
-import { unauthenticatedLimiter, authenticatedLimiter } from '../../../middleware/rateLimiter';
+import { unauthenticatedLimiter, authenticatedLimiter, getRedisClient } from '../../../middleware/rateLimiter';
 import { ScraperRegistry } from '../../../scrapers/registry';
 import { JumiaScraper } from '../../../scrapers/jumia';
 import { JijiScraper } from '../../../scrapers/jiji';
@@ -26,12 +26,8 @@ scraperRegistry.registerScraper(new KongaScraper());
 
 const normalizationService = new NormalizationService();
 // const priceHistoryService = new PriceHistoryService(prisma); // TODO: Re-enable when price history is implemented
-const searchService = new SearchService(scraperRegistry, normalizationService);
-
-// Connect to Redis on startup
-searchService.connect().catch((err) => {
-  console.error('Failed to connect SearchService to Redis:', err);
-});
+// Reuse the rate-limiter's Redis connection — initRedisClient() runs before createApp() in server.ts
+const searchService = new SearchService(scraperRegistry, normalizationService, getRedisClient());
 
 /**
  * Extended Request interface with optional user property

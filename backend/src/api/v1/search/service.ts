@@ -28,19 +28,27 @@ export class SearchService {
     private redisClient: ReturnType<typeof createClient> | null = null;
     private readonly CACHE_TTL_SEC = 300; // 5 minutes
     private readonly SCRAPER_TIMEOUT_MS = 15_000;
+    // True only when this instance created its own Redis connection
+    private _ownClient = false;
 
     constructor(
         scraperRegistry: ScraperRegistry,
         normalizationService: NormalizationService,
+        redisClient?: ReturnType<typeof createClient> | null,
     ) {
         this.scraperRegistry = scraperRegistry;
         this.normalizationService = normalizationService;
+        if (redisClient) {
+            this.redisClient = redisClient;
+        }
     }
 
     /**
-     * Initialize Redis connection for caching
+     * Initialize Redis connection for caching.
+     * No-op when an external client was supplied via the constructor.
      */
     async connect(): Promise<void> {
+        if (this.redisClient) return; // reusing an external client
         if (!config.REDIS_URL) {
             console.log('Redis URL not configured, caching disabled');
             return;
@@ -50,6 +58,7 @@ export class SearchService {
             this.redisClient = createClient({ url: config.REDIS_URL });
             this.redisClient.on('error', (err) => console.error('Redis cache error:', err));
             await this.redisClient.connect();
+            this._ownClient = true;
             console.log('Redis cache connected');
         } catch (error) {
             console.warn('Failed to connect to Redis for caching:', error);
@@ -58,10 +67,10 @@ export class SearchService {
     }
 
     /**
-     * Close Redis connection
+     * Close Redis connection — only when this service owns the client.
      */
     async disconnect(): Promise<void> {
-        if (this.redisClient) {
+        if (this.redisClient && this._ownClient) {
             await this.redisClient.quit().catch(() => {});
             this.redisClient = null;
         }
