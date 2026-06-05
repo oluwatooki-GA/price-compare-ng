@@ -43,3 +43,33 @@ export interface JobResponse {
   completedAt?: string | null;
   cached?: boolean;
 }
+
+export interface TrackedPriceHistoryEntry {
+  id: number;
+  price: number;
+  currency: string;
+  availability: boolean;
+  recordedAt: string;
+}
+
+export interface TrackedProduct {
+  id: number;
+  userId: number;
+  productUrl: string;
+  productName: string;
+  platform: string;
+  imageUrl: string | null;
+  lastKnownPrice: number | null;
+  alertThreshold: number | null;
+  alertEnabled: boolean;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  lastCheckedAt: string | null;
+  priceHistory: TrackedPriceHistoryEntry[];
+}
+
+export interface DashboardSummary {
+  trackedProducts: TrackedProduct[];
+  count: number;
+}
