@@ -3,7 +3,7 @@
  * Requirements 4.3, 4.5: Retry logic with exponential backoff and rate limiting
  */
 
-import axios, { AxiosError } from 'axios';
+import axios, { AxiosError, AxiosInstance } from 'axios';
 import { ScrapingError } from '../shared/errors';
 
 /**
@@ -58,29 +58,40 @@ export const DEFAULT_TIMEOUT_CONFIG: TimeoutConfig = {
   connectionTimeoutMs: 5000,
 };
 
+// Shared HTTP client — one instance for all scraper fetches, keeps connection pool alive
+const sharedHttpClient: AxiosInstance = axios.create({
+  timeout: DEFAULT_TIMEOUT_CONFIG.requestTimeoutMs,
+  headers: {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+    'Accept-Language': 'en-US,en;q=0.5',
+  },
+});
+
 /**
  * Rate limiter class to control request frequency per platform
  */
 export class RateLimiter {
-  private lastRequestTime: number = 0;
+  private lastRequestTime = 0;
   private minIntervalMs: number;
+  // Serialise concurrent callers — each call chains onto the previous one so
+  // two simultaneous requests cannot both see "no wait needed" at the same time.
+  private queue: Promise<void> = Promise.resolve();
 
   constructor(config: RateLimitConfig = DEFAULT_RATE_LIMIT_CONFIG) {
     this.minIntervalMs = 1000 / config.requestsPerSecond;
   }
 
-  /**
-   * Wait if necessary to respect rate limit
-   */
-  async waitIfNeeded(): Promise<void> {
-    const now = Date.now();
-    const timeSinceLastRequest = now - this.lastRequestTime;
-    
-    if (timeSinceLastRequest < this.minIntervalMs) {
-      const waitTime = this.minIntervalMs - timeSinceLastRequest;
-      await this.sleep(waitTime);
+  waitIfNeeded(): Promise<void> {
+    this.queue = this.queue.then(() => this._wait());
+    return this.queue;
+  }
+
+  private async _wait(): Promise<void> {
+    const elapsed = Date.now() - this.lastRequestTime;
+    if (elapsed < this.minIntervalMs) {
+      await this.sleep(this.minIntervalMs - elapsed);
     }
-    
     this.lastRequestTime = Date.now();
   }
 
@@ -169,48 +180,29 @@ export async function withRetry<T>(
 }
 
 /**
- * Create an axios instance with timeout configuration
- * 
- * @param timeoutConfig - Timeout configuration
- * @returns Configured axios instance
+ * Create an axios instance with timeout configuration.
+ * Kept for backwards-compatibility — new code should use fetchWithRetry directly.
  */
 export function createHttpClient(
-  timeoutConfig: TimeoutConfig = DEFAULT_TIMEOUT_CONFIG
-) {
-  return axios.create({
-    timeout: timeoutConfig.requestTimeoutMs,
-    headers: {
-      'User-Agent': 'PriceCompare-NG/1.0 (Price Comparison Service)',
-    },
-  });
+  _timeoutConfig: TimeoutConfig = DEFAULT_TIMEOUT_CONFIG
+): AxiosInstance {
+  return sharedHttpClient;
 }
 
 /**
  * Fetch HTML content from a URL with retry logic and rate limiting
- * 
- * @param url - URL to fetch
- * @param rateLimiter - Rate limiter instance
- * @param retryConfig - Retry configuration
- * @param timeoutConfig - Timeout configuration
- * @returns HTML content as string
- * @throws ScrapingError if request fails after retries
  */
 export async function fetchWithRetry(
   url: string,
   rateLimiter: RateLimiter,
   retryConfig: RetryConfig = DEFAULT_RETRY_CONFIG,
-  timeoutConfig: TimeoutConfig = DEFAULT_TIMEOUT_CONFIG
+  _timeoutConfig: TimeoutConfig = DEFAULT_TIMEOUT_CONFIG
 ): Promise<string> {
-  // Wait for rate limiter
   await rateLimiter.waitIfNeeded();
-  
-  // Create HTTP client with timeout
-  const httpClient = createHttpClient(timeoutConfig);
-  
-  // Execute request with retry logic
+
   return withRetry(async () => {
     try {
-      const response = await httpClient.get(url);
+      const response = await sharedHttpClient.get(url);
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {

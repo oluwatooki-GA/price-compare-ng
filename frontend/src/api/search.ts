@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import type { ComparisonResult } from '../types';
+import type { JobResponse } from '../types';
 
 export interface KeywordSearchRequest {
   keyword: string;
@@ -14,33 +14,26 @@ export interface KeywordSearchRequest {
 
 export interface UrlSearchRequest {
   url: string;
-  minPrice?: number;
-  maxPrice?: number;
-  minRating?: number;
-  availableOnly?: boolean;
-}
-
-export interface KeywordSearchResponse {
-  results: ComparisonResult[];
-  count: number;
 }
 
 export const searchApi = {
-  searchByKeyword: async (keyword: string, filters?: Omit<KeywordSearchRequest, 'keyword'>): Promise<ComparisonResult[]> => {
-    const requestData: KeywordSearchRequest = { keyword, ...filters };
-    console.log('API: Making keyword search request with:', requestData);
-    const response = await apiClient.post<KeywordSearchResponse>('/search/keyword', requestData);
-    console.log('API: Keyword search response status:', response.status);
-    console.log('API: Keyword search response data:', response.data);
-    return response.data.results;
+  searchByKeyword: async (
+    keyword: string,
+    filters?: Omit<KeywordSearchRequest, 'keyword'>,
+  ): Promise<JobResponse> => {
+    console.log('API: keyword search', keyword, filters);
+    const res = await apiClient.post<JobResponse>('/search/keyword', { keyword, ...filters });
+    return res.data;
   },
 
-  searchByUrl: async (url: string, filters?: Omit<UrlSearchRequest, 'url'>): Promise<ComparisonResult> => {
-    const requestData: UrlSearchRequest = { url, ...filters };
-    console.log('API: Making URL search request with:', requestData);
-    const response = await apiClient.post<KeywordSearchResponse>('/search/url', requestData);
-    console.log('API: URL search response status:', response.status);
-    console.log('API: URL search response data:', response.data);
-    return response.data.results[0];
+  searchByUrl: async (url: string): Promise<JobResponse> => {
+    console.log('API: url search', url);
+    const res = await apiClient.post<JobResponse>('/search/url', { url });
+    return res.data;
+  },
+
+  getJobStatus: async (jobId: string): Promise<JobResponse> => {
+    const res = await apiClient.get<JobResponse>(`/jobs/${jobId}`);
+    return res.data;
   },
 };

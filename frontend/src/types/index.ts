@@ -30,3 +30,16 @@ export interface User {
   email: string;
   createdAt: string;
 }
+
+export type JobStatus = 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED';
+
+export interface JobResponse {
+  jobId: string;
+  status: JobStatus;
+  results?: ComparisonResult[];
+  count?: number;
+  error?: string | null;
+  createdAt?: string;
+  completedAt?: string | null;
+  cached?: boolean;
+}

@@ -28,64 +28,83 @@ Nigerian e-commerce shoppers waste time switching between tabs to compare prices
 |---------|-------------|
 | **🔗 URL Search** | Paste any Jumia/Jiji link → instantly find similar products with price comparisons |
 | **🔍 Keyword Search** | Search across all platforms with price range and rating filters |
+| **⚙️ Async Job Queue** | Searches run as background jobs (BullMQ); the API returns a `jobId` instantly and the UI polls until results are ready |
 | **💾 Save Comparisons** | Keep track of products you're interested in (up to 50 saved items) |
-| **⭐ Best Value Badge** | Automatically highlights the best deal based on price, rating, and availability |
+| **⭐ Best Value Badge** | Automatically highlights the cheapest available deal |
 | **📱 Mobile Responsive** | Fully optimized for mobile with animated hamburger menu |
 | **🔒 Secure Auth** | JWT-based authentication with bcrypt password hashing |
-| **🔄 Redis Caching** | Fast search results with intelligent caching |
+| **🔄 Redis** | Shared Redis powers the job queue, the 5-minute result cache, and rate limiting |
+| **📊 Queue Dashboard** | Bull Board UI at `/admin/queues` for live job monitoring |
 
 ## 🏗️ Architecture
+
+Searches are **asynchronous**. The API process never scrapes — it enqueues a job
+and returns a `jobId`. A separate **worker** process consumes jobs from the
+BullMQ queue, runs the scrapers, and writes results back to PostgreSQL. The
+frontend polls `GET /api/v1/jobs/:jobId` until the job is `COMPLETED` or `FAILED`.
 
 ```mermaid
 flowchart TB
     subgraph Frontend
         UI["React UI"]
-        Hooks["Custom Hooks"]
-        Query["TanStack Query"]
+        Hooks["useSearch (polls every 2s)"]
     end
 
-    subgraph Backend
+    subgraph API["API Process"]
         Routes["Express Routes"]
-        Service["Search Service"]
-        Scraper1["Jumia Scraper"]
-        Scraper2["Konga Scraper"]
-        Scraper3["Jiji Scraper"]
+        Submit["SearchSubmitService"]
+        JobsRoute["Jobs Route"]
+    end
+
+    subgraph WorkerProc["Worker Process"]
+        Worker["BullMQ Worker"]
+        Scraper["ScraperService"]
+        S1["Jumia"]
+        S2["Konga"]
+        S3["Jiji"]
     end
 
     subgraph Data
-        Redis[("Redis Cache")]
-        DB[("PostgreSQL DB")]
+        Redis[("Redis<br/>queue · cache · rate limit")]
+        DB[("PostgreSQL<br/>jobs · users · comparisons")]
     end
 
-    subgraph External
-        Jumia["Jumia.com.ng"]
-        Konga["Konga.com"]
-        Jiji["Jiji.ng"]
-    end
-
-    UI --> Hooks --> Query -->|"HTTP/JSON"| Routes
-    Routes --> Service -->|"GET/SET"| Redis
-    Routes -->|"SQL"| DB
-    Service --> Scraper1 & Scraper2 & Scraper3
-    Scraper1 -->|"Cheerio"| Jumia
-    Scraper2 -->|"Cheerio"| Konga
-    Scraper3 -->|"Cheerio"| Jiji
+    UI --> Hooks -->|"POST /search/keyword"| Routes
+    Routes --> Submit -->|"enqueue"| Redis
+    Submit -->|"create ScrapeJob (PENDING)"| DB
+    Hooks -->|"poll GET /jobs/:id"| JobsRoute --> DB
+    Redis -->|"job"| Worker --> Scraper --> S1 & S2 & S3
+    Worker -->|"save results (COMPLETED)"| DB
 ```
+
+### Async search flow
+
+1. `POST /api/v1/search/keyword` → `SearchSubmitService` checks for a recent
+   completed job (cache hit → `200` with results) or an in-flight duplicate
+   (dedup → returns its `jobId`), otherwise creates a `ScrapeJob` and enqueues
+   it → `202 { jobId, status: "PENDING" }`.
+2. The **worker** picks up the job, runs `ScraperService` across all platforms,
+   normalizes results, and updates the job to `COMPLETED` (or `FAILED`).
+3. The frontend polls `GET /api/v1/jobs/:jobId` every 2s until it settles.
 
 ### Design Patterns
 
+- **Job Queue / Worker** - Scraping runs out-of-process via BullMQ; the API stays fast and the worker scales independently
 - **Adapter Pattern** - Platform scrapers extend a base `ScraperAdapter` class for easy extensibility
-- **Service Layer** - Business logic separated from route handlers for reusability
-- **Repository Pattern** - Data access abstracted through Prisma ORM
-- **Rate Limiting** - Redis-backed rate limiting with fallback to in-memory storage
+- **Service Layer** - Business logic in `services/` (`SearchSubmitService`, `ScraperService`, `AuthService`, …), separate from HTTP routes
+- **Repository Pattern** - Data access isolated in `repositories/` (Prisma); routes and services never query Prisma directly
+- **Shared Redis Client** - A single `config/redis.ts` connection backs the queue, cache, and rate limiter
+- **Rate Limiting** - Redis-backed, IP-based for anonymous and user-based for authenticated requests
 
 ### Tech Stack
 
-**Backend:** Express.js, TypeScript, Prisma ORM, PostgreSQL, Redis, JWT, Cheerio
+**Backend:** Express.js, TypeScript, BullMQ, Prisma ORM, PostgreSQL, Redis, JWT, Cheerio
 
 **Frontend:** React 19, Vite, TailwindCSS, Framer Motion, TanStack Query, React Router
 
 **Infrastructure:** Docker, Docker Compose
+
+**Load testing:** k6
 
 ## 🚀 Quick Start with Docker
 
@@ -100,21 +119,33 @@ cd price-compare-ng
 docker compose up --build
 
 # Access the application
-# Frontend: http://localhost:5173
+# Frontend:    http://localhost:5173
 # Backend API: http://localhost:3000
-# API Docs: http://localhost:3000/api-docs
+# API Docs:    http://localhost:3000/api-docs
+# Queue Board: http://localhost:3000/admin/queues
 ```
 
 That's it! Docker handles all dependencies including PostgreSQL and Redis.
+
+> In development the backend builds from `Dockerfile.dev`, which runs
+> `prisma db push` to sync the schema on every start. The production `Dockerfile`
+> runs `prisma migrate deploy` against the committed migrations instead.
 
 ### Docker Services
 
 | Service | Port | Description |
 |---------|------|-------------|
 | Frontend | 5173 | React app with Vite HMR |
-| Backend | 3000 | Express API |
-| PostgreSQL | 5432 | Database |
-| Redis | 6379 | Caching & rate limiting |
+| Backend | 3000 | Express API (enqueues jobs, serves results) |
+| Worker | — | BullMQ worker process that runs the scrapers |
+| PostgreSQL | 5432 | Database (jobs, users, saved comparisons) |
+| Redis | 6379 | Job queue, result cache & rate limiting |
+
+Scale the worker to process more jobs in parallel:
+
+```bash
+docker compose up -d --scale worker=3
+```
 
 ## 📸 Screenshots
 
@@ -138,20 +169,28 @@ That's it! Docker handles all dependencies including PostgreSQL and Redis.
 ```
 ├── backend/
 │   ├── src/
-│   │   ├── api/v1/        # Route handlers + service layer
+│   │   ├── api/v1/        # HTTP routes only (auth, search, comparisons, jobs)
+│   │   ├── services/      # Business logic (SearchSubmit, Scraper, Auth, …)
+│   │   ├── repositories/  # Data access (Prisma) — incl. ScrapeJobRepository
 │   │   ├── scrapers/      # Platform adapters (Jumia, Konga, Jiji)
-│   │   ├── middleware/    # Auth, rate limiting, error handling
-│   │   └── config/        # Environment validation
-│   ├── prisma/           # Database schema and migrations
-│   ├── Dockerfile        # Container definition
+│   │   ├── queue/         # BullMQ queue definition + job types
+│   │   ├── middleware/    # auth, rate limiting, error handling
+│   │   ├── config/        # env, database, shared redis client, security
+│   │   ├── server.ts      # Express API entry point
+│   │   └── worker.ts      # Standalone BullMQ worker process
+│   ├── __tests__/        # unit / integration / e2e (Vitest)
+│   ├── prisma/           # Schema and migrations
+│   ├── Dockerfile        # Production image (migrate deploy)
+│   ├── Dockerfile.dev    # Dev image (db push + hot reload)
 │   └── .env.sample       # Environment template
 ├── frontend/
 │   ├── src/
 │   │   ├── components/   # Reusable UI components
 │   │   ├── pages/        # Route-level pages
-│   │   ├── hooks/        # Custom React hooks
+│   │   ├── hooks/        # Custom React hooks (useSearch polls jobs)
 │   │   └── api/          # API client functions
 │   └── Dockerfile        # Container definition
+├── tests/load/           # k6 load tests (search.js, worker-stress.js)
 ├── docker-compose.yml    # Service orchestration
 └── .env.sample          # Root environment template
 ```
@@ -168,6 +207,8 @@ DATABASE_URL=postgresql://pricecompare:pricecompare123@postgres:5432/pricecompar
 JWT_SECRET=your-super-secret-jwt-key-minimum-32-characters-long
 REDIS_URL=redis://redis:6379
 CORS_ORIGINS=http://localhost:5173
+# Load testing only — bypasses rate limiting. NEVER true in production.
+DISABLE_RATE_LIMIT=false
 ```
 
 **Frontend (`frontend/.env`):**
@@ -178,12 +219,32 @@ VITE_API_BASE_URL=http://localhost:3000/api/v1
 ## 🧪 Testing
 
 ```bash
-# Backend tests (inside container)
+# Backend tests (Vitest — unit + integration)
 docker compose exec backend npm test
 
 # Frontend linting
 docker compose exec frontend npm run lint
 ```
+
+### Load testing (k6)
+
+Two k6 scenarios live in `tests/load/` — see [`tests/load/README.md`](tests/load/README.md)
+for full instructions:
+
+- **`search.js`** — 50 users hitting shared queries; stresses the **API** and
+  exercises the cache/dedup path.
+- **`worker-stress.js`** — 50 users with unique, uncached queries so every
+  request creates a real job; stresses the **worker pool** (threshold: 95% of
+  jobs complete within 60s).
+
+```bash
+# from the repo root, with the stack running
+k6 run tests/load/search.js
+k6 run tests/load/worker-stress.js
+```
+
+> Set `DISABLE_RATE_LIMIT=true` in `backend/.env` before load testing, otherwise
+> 50 users from one IP trip the rate limiter.
 
 ## 🔮 Future Enhancements
 
@@ -197,6 +258,8 @@ docker compose exec frontend npm run lint
 
 Building this project taught me:
 
+- **Async Architecture** - Decoupling slow scraping from the request cycle with a BullMQ job queue and a standalone worker process
+- **Clean Architecture** - Separating HTTP routes, service-layer business logic, and repository data access
 - **Web Scraping Challenges** - Handling dynamic content, rate limits, and HTML parsing
 - **Database Design** - Designing schemas for many-to-many relationships
 - **Type Safety** - Leveraging TypeScript across the full stack
@@ -204,6 +267,7 @@ Building this project taught me:
 - **Authentication Flow** - Implementing secure JWT auth with proper token management
 - **Docker Deployment** - Containerizing full-stack applications with orchestration
 - **Caching Strategies** - Implementing Redis for performance optimization
+- **Load Testing** - Profiling API vs worker bottlenecks with k6
 
 ## 📄 License
 

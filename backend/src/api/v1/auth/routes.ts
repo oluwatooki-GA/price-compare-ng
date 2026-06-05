@@ -1,9 +1,9 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { AuthService } from './service';
+import { AuthService } from '../../../services/AuthService';
 import { UserRegisterSchema, UserLoginSchema } from './schemas';
 import { AuthenticationError, ValidationError } from '../../../shared/errors';
-import { verifyToken } from '../../../config/security';
 import { unauthenticatedLimiter, authenticatedLimiter } from '../../../middleware/rateLimiter';
+import { authenticateToken, AuthenticatedRequest } from '../../../middleware/auth';
 import { RepositoryContainer } from '../../../repositories/RepositoryContainer';
 import { prisma } from '../../../config/database';
 
@@ -12,57 +12,6 @@ const router = Router();
 // Initialize repository container and service
 const repositoryContainer = RepositoryContainer.getInstance(prisma);
 const authService = new AuthService(repositoryContainer);
-
-/**
- * Extended Request interface with user property
- */
-interface AuthenticatedRequest extends Request {
-  user?: {
-    userId: number;
-    email: string;
-  };
-}
-
-/**
- * Authentication middleware for protected routes
- * Verifies JWT token from Authorization header
- */
-async function authenticateToken(
-  req: AuthenticatedRequest,
-  _res: Response,
-  next: NextFunction
-): Promise<void> {
-  try {
-    const authHeader = req.headers.authorization;
-    
-    if (!authHeader) {
-      throw new AuthenticationError('No authorization header provided');
-    }
-
-    const parts = authHeader.split(' ');
-    
-    if (parts.length !== 2 || parts[0] !== 'Bearer') {
-      throw new AuthenticationError('Invalid authorization header format');
-    }
-
-    const token = parts[1];
-    const payload = verifyToken(token);
-    
-    if (!payload) {
-      throw new AuthenticationError('Invalid or expired token');
-    }
-
-    // Attach user info to request
-    req.user = {
-      userId: payload.userId,
-      email: payload.email
-    };
-
-    next();
-  } catch (error) {
-    next(error);
-  }
-}
 
 /**
  * @swagger
@@ -249,4 +198,4 @@ router.get('/me', authenticatedLimiter, authenticateToken, async (req: Authentic
   }
 });
 
-export { router as authRouter, authenticateToken };
+export { router as authRouter };

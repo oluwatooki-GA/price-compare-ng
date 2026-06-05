@@ -114,7 +114,7 @@ const RangeSlider = ({ min, max, low, high, onChange }: RangeSliderProps) => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const UnifiedSearch = () => {
-  const { searchByUrl, searchByKeyword } = useSearch();
+  const { searchByUrl, searchByKeyword, jobPhase } = useSearch();
   const navigate = useNavigate();
 
   const [step, setStep] = useState<Step>('input');
@@ -219,13 +219,16 @@ export const UnifiedSearch = () => {
       setEditedName(trimmedInput);
       setPrefill(null);
 
-      // Default slider range (no scraped price)
-      const defaultMin = 1000;
-      const defaultMax = 500000;
+      // Slider goes up to 3M so the high handle can be dragged above 500K.
+      // Initial high handle at 500K means rangeHigh < sliderMax is true and
+      // the filter is actually sent — fixing the bug where maxPrice was never
+      // transmitted when both handle and slider max were 500K.
+      const defaultMin = 1_000;
+      const defaultMax = 3_000_000;
       setSliderMin(defaultMin);
       setSliderMax(defaultMax);
       setRangeLow(defaultMin);
-      setRangeHigh(defaultMax);
+      setRangeHigh(500_000);
 
       setStep('filters');
     }
@@ -265,7 +268,11 @@ export const UnifiedSearch = () => {
     }
   };
 
-  const isSearching = searchByKeyword.isPending;
+  const isSearching = searchByKeyword.isPending || searchByUrl.isPending;
+  const searchingLabel =
+    jobPhase === 'scraping' ? 'Scraping…' :
+    jobPhase === 'queued'   ? 'Queued…'   :
+                              'Loading…';
 
   return (
     <Card>
@@ -306,7 +313,9 @@ export const UnifiedSearch = () => {
                   className="w-full cursor-pointer"
                 >
                   {step === 'loading' ? (
-                    <span className="flex items-center gap-2"><Loader2 className="w-5 h-5 animate-spin" />Loading...</span>
+                    <span className="flex items-center gap-2">
+                      <Loader2 className="w-5 h-5 animate-spin" />{searchingLabel}
+                    </span>
                   ) : (
                     'Continue'
                   )}
@@ -452,7 +461,7 @@ export const UnifiedSearch = () => {
                   size="lg"
                   className="w-full cursor-pointer"
                 >
-                  {isSearching ? 'Searching…' : 'Find Similar Products'}
+                  {isSearching ? searchingLabel : 'Find Similar Products'}
                 </Button>
               </motion.div>
             </motion.form>
