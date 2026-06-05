@@ -14,8 +14,43 @@ model User {
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
   savedComparisons SavedComparison[]
+  trackedProducts  TrackedProduct[]
 
   @@index([email])
+}
+
+model TrackedProduct {
+  id             Int                   @id @default(autoincrement())
+  userId         Int
+  user           User                  @relation(fields: [userId], references: [id])
+  productUrl     String
+  productName    String
+  platform       String
+  imageUrl       String?
+  lastKnownPrice Float?
+  alertThreshold Float?
+  alertEnabled   Boolean               @default(false)
+  isActive       Boolean               @default(true)
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+  lastCheckedAt  DateTime?
+  priceHistory   TrackedPriceHistory[]
+
+  @@unique([userId, productUrl])
+  @@index([userId])
+  @@index([isActive])
+}
+
+model TrackedPriceHistory {
+  id               Int            @id @default(autoincrement())
+  trackedProductId Int
+  trackedProduct   TrackedProduct @relation(fields: [trackedProductId], references: [id], onDelete: Cascade)
+  price            Float
+  currency         String         @default("NGN")
+  availability     Boolean        @default(true)
+  recordedAt       DateTime       @default(now())
+
+  @@index([trackedProductId, recordedAt])
 }
 
 model PriceHistory {
