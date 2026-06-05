@@ -1,4 +1,5 @@
 export interface ScrapeJobData {
+  jobType?: 'scrape';
   jobDbId: string;
   query: string;
   queryType: 'keyword' | 'url';
@@ -12,3 +13,24 @@ export interface ScrapeJobData {
     limit?: number;
   };
 }
+
+export interface PriceCheckJobData {
+  jobType: 'price-check';
+  trackedProductId: number;
+  productUrl: string;
+  platform: string;
+  userId: number;
+}
+
+export interface AlertJobData {
+  trackedProductId: number;
+  userEmail: string;
+  productName: string;
+  productUrl: string;
+  platform: string;
+  newPrice: number;
+  threshold: number;
+  currency: string;
+}
+
+export type ScrapeQueueData = ScrapeJobData | PriceCheckJobData;

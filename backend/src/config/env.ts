@@ -21,9 +21,14 @@ const envSchema = z.object({
   REDIS_URL: z.string().min(1, 'REDIS_URL is required'),
   
   // CORS configuration
-  CORS_ORIGINS: z.string().min(1, 'CORS_ORIGINS is required').transform((val) => 
+  CORS_ORIGINS: z.string().min(1, 'CORS_ORIGINS is required').transform((val) =>
     val.split(',').map(origin => origin.trim())
   ),
+
+  // Gmail configuration for alert emails (optional)
+  GMAIL_USER: z.string().optional(),
+  GMAIL_APP_PASSWORD: z.string().optional(),
+  DISABLE_RATE_LIMIT: z.string().optional(),
 });
 
 // Validate environment variables
