@@ -1,14 +1,16 @@
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { ErrorMessage } from '../components/common/ErrorMessage';
-import type { ComparisonResult } from '../types';
+import type { ComparisonResult, ProductData } from '../types';
 import { useAuth } from '../hooks/useAuth';
 import { useComparisons } from '../hooks/useComparisons';
+import { useTrackedProducts } from '../hooks/useTrackedProducts';
 import { motion } from 'framer-motion';
 import { Button } from '../components/ui/button';
 import { useState, useMemo, useEffect } from 'react';
 import { useSearch } from '../hooks/useSearch';
 import { ProductCard } from '../components/comparison/ProductCard';
+import { TrackProductModal } from '../components/tracked/TrackProductModal';
 
 const PAGE_SIZE = 20;
 type SortBy = 'price_asc' | 'price_desc' | 'rating' | 'name';
@@ -19,7 +21,10 @@ export const SearchResults = () => {
   const [searchParams] = useSearchParams();
   const { isAuthenticated } = useAuth();
   const { saveComparison } = useComparisons();
+  const { trackProduct } = useTrackedProducts();
   const { searchByKeyword, jobPhase } = useSearch();
+  const [trackingProduct, setTrackingProduct] = useState<ProductData | null>(null);
+  const [trackedUrls, setTrackedUrls] = useState<Set<string>>(new Set());
 
   // Query from state (normal navigation) or URL param (direct link / refresh)
   const query = (location.state?.query as string | undefined)
@@ -131,6 +136,33 @@ export const SearchResults = () => {
     );
   };
 
+  const handleTrackConfirm = (alertThreshold?: number, alertEnabled?: boolean) => {
+    if (!trackingProduct) return;
+    trackProduct.mutate(
+      {
+        productUrl: trackingProduct.url,
+        productName: trackingProduct.name,
+        platform: trackingProduct.platform,
+        imageUrl: trackingProduct.imageUrl,
+        currentPrice: trackingProduct.price,
+        alertThreshold,
+        alertEnabled,
+      },
+      {
+        onSuccess: () => {
+          setTrackedUrls(prev => new Set(prev).add(trackingProduct.url));
+          toast.success(`Now tracking: ${trackingProduct.name.slice(0, 40)}…`);
+          setTrackingProduct(null);
+        },
+        onError: (err: unknown) => {
+          const msg = (err as { response?: { data?: { message?: string } } }).response?.data?.message;
+          toast.error(msg ?? 'Failed to track product');
+          setTrackingProduct(null);
+        },
+      },
+    );
+  };
+
   if (!query || (allProducts.length === 0 && !searchByKeyword.isPending)) {
     return (
       <div className="min-h-screen bg-[#0A0A0A] py-12">
@@ -163,6 +195,7 @@ export const SearchResults = () => {
   }
 
   return (
+    <>
     <div className="min-h-screen bg-[#0A0A0A] py-8 sm:py-12">
       <div className="container mx-auto px-4 sm:px-6 md:px-8 lg:px-16">
 
@@ -224,17 +257,29 @@ export const SearchResults = () => {
                 product={product}
                 isBestValue={product.url === bestValueUrl}
               />
-              <button
-                onClick={() => isAuthenticated ? handleSave(result) : toast('Login to save comparisons', { icon: '🔒' })}
-                disabled={saveComparison.isPending}
-                className={`absolute top-3 right-3 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded backdrop-blur-sm transition-colors disabled:opacity-50 cursor-pointer ${
-                  savedUrls.has(product.url)
-                    ? 'bg-[#1edc6a]/20 text-[#1edc6a]'
-                    : 'bg-[#262626]/80 text-slate-400 hover:text-white hover:bg-[#333]'
-                }`}
-              >
-                {saveComparison.isPending ? '…' : savedUrls.has(product.url) ? '✓' : 'Save'}
-              </button>
+              <div className="absolute top-3 right-3 flex gap-1.5">
+                <button
+                  onClick={() => isAuthenticated ? handleSave(result) : toast('Login to save comparisons', { icon: '🔒' })}
+                  disabled={saveComparison.isPending}
+                  className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded backdrop-blur-sm transition-colors disabled:opacity-50 cursor-pointer ${
+                    savedUrls.has(product.url)
+                      ? 'bg-[#1edc6a]/20 text-[#1edc6a]'
+                      : 'bg-[#262626]/80 text-slate-400 hover:text-white hover:bg-[#333]'
+                  }`}
+                >
+                  {saveComparison.isPending ? '…' : savedUrls.has(product.url) ? '✓ Saved' : 'Save'}
+                </button>
+                <button
+                  onClick={() => isAuthenticated ? setTrackingProduct(product) : toast('Login to track products', { icon: '🔒' })}
+                  className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded backdrop-blur-sm transition-colors cursor-pointer ${
+                    trackedUrls.has(product.url)
+                      ? 'bg-blue-500/20 text-blue-400'
+                      : 'bg-[#262626]/80 text-slate-400 hover:text-white hover:bg-[#333]'
+                  }`}
+                >
+                  {trackedUrls.has(product.url) ? '✓ Tracked' : 'Track'}
+                </button>
+              </div>
             </motion.div>
           ))}
         </div>
@@ -269,5 +314,15 @@ export const SearchResults = () => {
 
       </div>
     </div>
+
+    {trackingProduct && (
+      <TrackProductModal
+        product={trackingProduct}
+        onConfirm={handleTrackConfirm}
+        onClose={() => setTrackingProduct(null)}
+        isPending={trackProduct.isPending}
+      />
+    )}
+    </>
   );
 };

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import { LogOut, Search, Bookmark, LogIn, UserPlus, Menu, Github } from 'lucide-react';
+import { LogOut, Search, Bookmark, LogIn, UserPlus, Menu, Github, LayoutDashboard } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export const Header = () => {
@@ -28,6 +28,12 @@ export const Header = () => {
             <Link to="/saved" className="flex items-center gap-2 text-sm font-medium text-white hover:text-[#1edc6a] transition-colors">
               <Bookmark className="w-4 h-4" />
               Saved
+            </Link>
+          )}
+          {isAuthenticated && (
+            <Link to="/dashboard" className="flex items-center gap-2 text-sm font-medium text-white hover:text-[#1edc6a] transition-colors">
+              <LayoutDashboard className="w-4 h-4" />
+              Dashboard
             </Link>
           )}
           <a
@@ -131,6 +137,22 @@ export const Header = () => {
                   >
                     <Bookmark className="w-5 h-5" />
                     Saved Comparisons
+                  </Link>
+                </motion.div>
+              )}
+              {isAuthenticated && (
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.175 }}
+                >
+                  <Link
+                    to="/dashboard"
+                    className="flex items-center gap-3 px-4 py-3 text-white hover:bg-[#161616] rounded-lg transition-colors"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <LayoutDashboard className="w-5 h-5" />
+                    Dashboard
                   </Link>
                 </motion.div>
               )}
