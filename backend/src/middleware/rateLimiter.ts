@@ -1,8 +1,15 @@
 import rateLimit from 'express-rate-limit';
 import RedisStore from 'rate-limit-redis';
+import { RequestHandler } from 'express';
 import { redisClient } from '../config/redis';
 
-export const unauthenticatedLimiter = rateLimit({
+// When DISABLE_RATE_LIMIT=true, limiters become pass-throughs. Intended ONLY
+// for load testing from a single IP — never enable this in production.
+const RATE_LIMIT_DISABLED = process.env.DISABLE_RATE_LIMIT === 'true';
+
+const passThrough: RequestHandler = (_req, _res, next) => next();
+
+const realUnauthenticatedLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 10,
   message: 'Too many requests from this IP, please try again later.',
@@ -17,7 +24,7 @@ export const unauthenticatedLimiter = rateLimit({
   },
 });
 
-export const authenticatedLimiter = rateLimit({
+const realAuthenticatedLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 60,
   keyGenerator: (req) => {
@@ -38,13 +45,25 @@ export const authenticatedLimiter = rateLimit({
   },
 });
 
+export const unauthenticatedLimiter: RequestHandler = RATE_LIMIT_DISABLED
+  ? passThrough
+  : realUnauthenticatedLimiter;
+
+export const authenticatedLimiter: RequestHandler = RATE_LIMIT_DISABLED
+  ? passThrough
+  : realAuthenticatedLimiter;
+
 export function enableRedisRateLimiting(): void {
+  if (RATE_LIMIT_DISABLED) {
+    console.warn('⚠️  Rate limiting DISABLED via DISABLE_RATE_LIMIT — do not use in production');
+    return;
+  }
   if (!redisClient) return;
   const store = new RedisStore({
     sendCommand: (...args: string[]) => redisClient.sendCommand(args),
   });
-  (unauthenticatedLimiter as unknown as { store: unknown }).store = store;
-  (authenticatedLimiter  as unknown as { store: unknown }).store = store;
+  (realUnauthenticatedLimiter as unknown as { store: unknown }).store = store;
+  (realAuthenticatedLimiter  as unknown as { store: unknown }).store = store;
   console.log('Redis rate limiting enabled');
 }
 
