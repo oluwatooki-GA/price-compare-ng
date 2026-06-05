@@ -1,13 +1,36 @@
 # Load Testing — Search Flow (k6)
 
-Load test for the async search pipeline: submit a keyword search, then poll the
-job until it completes. Simulates 50 concurrent users picking random product
-queries.
+Load tests for the async search pipeline: submit a keyword search, then poll the
+job until it completes. Both simulate 50 concurrent users with the same ramp
+profile (30s up → 60s hold → 10s down).
 
-`search.js` exercises the real request/response shapes:
+Both exercise the real request/response shapes:
 
 - `POST /api/v1/search/keyword` → `200` (cached, with `results`) or `202` (new/active job)
 - `GET  /api/v1/jobs/:jobId`    → `200` with `{ status, results, ... }`
+
+---
+
+## Which test to run
+
+| | `search.js` | `worker-stress.js` |
+|---|---|---|
+| **Queries** | 10 shared product queries | 500+ globally-unique queries (product + random number + per-request nonce) |
+| **Cache behaviour** | Heavy cache/dedup hits — most submits return instantly | Every submit bypasses the 5-min dedup cache and creates a **real** scrape job |
+| **What it stresses** | The **API**: enqueue path, cache lookups, dedup queries, Redis | The **worker pool**: how fast jobs are actually scraped and completed |
+| **Poll window** | 30s | 90s (jobs can take longer; needed to measure the 60s threshold) |
+| **Key threshold** | submit p95 < 500ms, fail < 1% | adds **job completion p95 < 60s** |
+| **Use when** | Checking the API stays fast and stable under realistic, repeat-heavy traffic | Capacity-planning the workers — "can N workers clear jobs fast enough?" |
+
+**Rule of thumb:**
+- Run **`search.js`** to validate the read/submit path under realistic load where
+  users repeat popular searches (the cache does its job).
+- Run **`worker-stress.js`** to find the worker ceiling — every request becomes a
+  job, so `job_completion_time` and `timed_out_jobs` tell you whether the workers
+  keep up. This is the test to pair with `--scale worker=3` (see §3) to prove
+  scaling helps.
+
+Run either the same way (`k6 run tests/load/<file>.js`); only the script name changes.
 
 ---
 
@@ -205,7 +228,8 @@ Custom counters added by this test:
 | `cached_hits` | Submits answered immediately from cache (HTTP 200 with results). |
 | `completed_jobs` | Jobs that reached `COMPLETED` via polling. |
 | `failed_jobs` | Jobs that reached `FAILED`. |
-| `timed_out_jobs` | Jobs that never settled within the 30s poll window. |
+| `timed_out_jobs` | Jobs that never settled within the poll window (30s in `search.js`, 90s in `worker-stress.js`). |
+| `job_completion_time` | (`worker-stress.js`) Time from submit to `COMPLETED`. The 60s threshold is measured on this. |
 
 Thresholds appear at the top of the summary with a ✓ (pass) or ✗ (fail). The
 process exit code is non-zero if any threshold fails — useful for CI gating.
