@@ -3,11 +3,9 @@ import { UserRepository } from './UserRepository';
 import { SavedComparisonRepository } from './SavedComparisonRepository';
 import { PriceHistoryRepository } from './PriceHistoryRepository';
 import { ScrapeJobRepository } from './ScrapeJobRepository';
+import { TrackedProductRepository } from './TrackedProductRepository';
+import { TrackedPriceHistoryRepository } from './TrackedPriceHistoryRepository';
 
-/**
- * Central container for all repository instances
- * Provides dependency injection for services
- */
 export class RepositoryContainer {
   private static instance: RepositoryContainer;
 
@@ -16,6 +14,8 @@ export class RepositoryContainer {
   private savedComparisonRepository: SavedComparisonRepository;
   private priceHistoryRepository: PriceHistoryRepository;
   private scrapeJobRepository: ScrapeJobRepository;
+  private trackedProductRepository: TrackedProductRepository;
+  private trackedPriceHistoryRepository: TrackedPriceHistoryRepository;
 
   private constructor(prisma: PrismaClient) {
     this.prisma = prisma;
@@ -23,6 +23,8 @@ export class RepositoryContainer {
     this.savedComparisonRepository = new SavedComparisonRepository(prisma);
     this.priceHistoryRepository = new PriceHistoryRepository(prisma);
     this.scrapeJobRepository = new ScrapeJobRepository(prisma);
+    this.trackedProductRepository = new TrackedProductRepository(prisma);
+    this.trackedPriceHistoryRepository = new TrackedPriceHistoryRepository(prisma);
   }
 
   static getInstance(prisma: PrismaClient): RepositoryContainer {
@@ -48,10 +50,14 @@ export class RepositoryContainer {
     return this.scrapeJobRepository;
   }
 
-  /**
-   * Create repositories with transactional Prisma client
-   * Use this for operations that need to span multiple repositories
-   */
+  getTrackedProductRepository(): TrackedProductRepository {
+    return this.trackedProductRepository;
+  }
+
+  getTrackedPriceHistoryRepository(): TrackedPriceHistoryRepository {
+    return this.trackedPriceHistoryRepository;
+  }
+
   withTransaction(tx: PrismaClient): RepositoryContainer {
     return new RepositoryContainer(tx);
   }
