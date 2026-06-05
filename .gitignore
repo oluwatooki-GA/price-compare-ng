@@ -35,6 +35,9 @@ frontend/build/
 *.swp
 *.swo
 
+# Claude Code local settings
+.claude/
+
 # Testing
 .pytest_cache/
 .coverage
