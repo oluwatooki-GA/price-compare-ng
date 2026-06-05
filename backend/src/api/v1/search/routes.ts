@@ -2,7 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { KeywordSearchRequestSchema, UrlSearchRequestSchema } from './schemas';
 import { ValidationError } from '../../../shared/errors';
 import { unauthenticatedLimiter, authenticatedLimiter } from '../../../middleware/rateLimiter';
-import { verifyToken } from '../../../config/security';
+import { optionalAuth, AuthenticatedRequest } from '../../../middleware/auth';
 import { SearchSubmitService } from '../../../services/SearchSubmitService';
 import { ScrapeJobRepository } from '../../../repositories/ScrapeJobRepository';
 import { scrapeQueue } from '../../../queue';
@@ -14,22 +14,7 @@ const router = Router();
 const jobRepository = new ScrapeJobRepository(prisma);
 export const searchSubmitService = new SearchSubmitService(jobRepository, scrapeQueue);
 
-interface OptionalAuthRequest extends Request {
-  user?: { userId: number; email: string };
-}
-
-function optionalAuth(req: OptionalAuthRequest, _res: Response, next: NextFunction): void {
-  try {
-    const parts = req.headers.authorization?.split(' ');
-    if (parts?.length === 2 && parts[0] === 'Bearer') {
-      const payload = verifyToken(parts[1]);
-      if (payload) req.user = { userId: payload.userId, email: payload.email };
-    }
-  } catch { /* ignore invalid tokens */ }
-  next();
-}
-
-function applyRateLimit(req: OptionalAuthRequest, res: Response, next: NextFunction): void {
+function applyRateLimit(req: AuthenticatedRequest, res: Response, next: NextFunction): void {
   if (req.user) {
     authenticatedLimiter(req, res, next);
   } else {

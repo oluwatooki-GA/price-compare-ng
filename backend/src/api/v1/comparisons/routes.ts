@@ -1,9 +1,9 @@
-import { Router, Request, Response, NextFunction } from 'express';
+import { Router, Response, NextFunction } from 'express';
 import { ComparisonService } from '../../../services/ComparisonService';
 import { SaveComparisonRequestSchema } from './schemas';
 import { ValidationError } from '../../../shared/errors';
-import { authenticateToken } from '../auth/routes';
 import { authenticatedLimiter } from '../../../middleware/rateLimiter';
+import { authenticateToken, AuthenticatedRequest } from '../../../middleware/auth';
 import { RepositoryContainer } from '../../../repositories/RepositoryContainer';
 import { prisma } from '../../../config/database';
 
@@ -11,10 +11,6 @@ const router = Router();
 
 const repositoryContainer = RepositoryContainer.getInstance(prisma);
 const comparisonService = new ComparisonService(repositoryContainer.getSavedComparisonRepository());
-
-interface AuthenticatedRequest extends Request {
-  user?: { userId: number; email: string };
-}
 
 router.post(
   '/',
