@@ -38,12 +38,10 @@ echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.i
 sudo apt-get update && sudo apt-get install k6
 ```
 
-**Docker (no install):**
-```bash
-docker run --rm -i --network host grafana/k6 run - < tests/load/search.js
-```
+**Docker (no install):** see [Running via Docker](#running-via-docker-no-local-binary)
+below — the `--network host` form only works on Linux.
 
-Verify:
+Verify a local install:
 ```bash
 k6 version
 ```
@@ -66,6 +64,86 @@ k6 run -e BASE_URL=http://localhost:3000 tests/load/search.js
 ```
 
 The run takes ~100 seconds (30s ramp-up + 60s hold + 10s ramp-down).
+
+---
+
+## Run from WSL Ubuntu (recommended on Windows)
+
+On Windows the simplest setup is to run the **native k6 binary inside WSL
+Ubuntu**. Docker Desktop's WSL integration forwards the published port `3000` to
+`localhost` inside Ubuntu, so `k6 run` works with no networking flags and no
+container — unlike the Dockerised k6 approach, which needs `host.docker.internal`
+and a volume mount.
+
+**1. Open the Ubuntu terminal and go to the repo** (Windows drives live under `/mnt`):
+```bash
+cd /mnt/c/Users/LENOVO/Projects/price-compare-ng
+```
+
+**2. Confirm the stack is reachable from Ubuntu** (with `docker compose up` running):
+```bash
+curl http://localhost:3000/health
+```
+Expect `{"status":"ok",...}`. If you get nothing, enable Docker Desktop →
+Settings → Resources → WSL Integration for your Ubuntu distro and restart the stack.
+
+**3. Install k6 natively (one-time):**
+```bash
+sudo gpg -k
+sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+sudo apt-get update && sudo apt-get install k6
+```
+
+**4. Run it:**
+```bash
+k6 run tests/load/search.js
+```
+No `BASE_URL` needed — the default `http://localhost:3000` is correct from WSL.
+
+---
+
+## Running via Docker (no local binary)
+
+If you installed k6 with `docker pull grafana/k6` instead of the native binary,
+run the script inside a container. Start the stack first (`docker compose up`).
+
+Two things differ from the native commands:
+
+1. **Networking.** Inside the container, `localhost` is the container itself, not
+   your machine. On **Docker Desktop (Windows/macOS)** reach the host via
+   `host.docker.internal`. On **Linux**, add `--network host` and use `localhost`.
+2. **Passing the script.** PowerShell does not support the `< file` redirect used
+   in Linux examples, so mount the folder instead of piping over stdin.
+
+**Windows / macOS (Docker Desktop) — PowerShell:**
+```powershell
+docker run --rm -v ${PWD}/tests/load:/scripts grafana/k6 run -e BASE_URL=http://host.docker.internal:3000 /scripts/search.js
+```
+
+**Windows / macOS (Docker Desktop) — bash:**
+```bash
+docker run --rm -v "$(pwd)/tests/load:/scripts" grafana/k6 run -e BASE_URL=http://host.docker.internal:3000 /scripts/search.js
+```
+
+**Linux:**
+```bash
+docker run --rm -i --network host grafana/k6 run - < tests/load/search.js
+```
+
+### Alternative: attach to the Compose network
+
+Instead of `host.docker.internal`, join k6 to the same Docker network as the
+stack and address the API by its service name (`backend`):
+
+```powershell
+docker run --rm -v ${PWD}/tests/load:/scripts --network price-compare-ng_default grafana/k6 run -e BASE_URL=http://backend:3000 /scripts/search.js
+```
+
+If that network name errors, find the real one (look for the `*_default` entry):
+```powershell
+docker network ls
+```
 
 ---
 
