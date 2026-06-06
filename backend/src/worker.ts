@@ -10,9 +10,8 @@ import { NormalizationService } from './api/v1/search/normalization';
 import { ScraperService } from './services/ScraperService';
 import { PriceCheckService } from './services/PriceCheckService';
 import { RepositoryContainer } from './repositories/RepositoryContainer';
-import { bullmqConnection } from './queue';
-import { createNotificationQueue } from './queue/notificationQueue';
-import type { ScrapeQueueData } from './queue/types';
+import { bullmqConnection, notificationQueue } from './queue';
+import type { ScrapeQueueData, ScrapeJobData, PriceCheckJobData } from './queue/types';
 
 async function startWorker(): Promise<void> {
   await connectRedis();
@@ -36,13 +35,11 @@ async function startWorker(): Promise<void> {
     repositoryContainer.getUserRepository(),
   );
 
-  const notificationQueue = createNotificationQueue();
-
   const worker = new Worker<ScrapeQueueData>(
     'scrape',
     async (job) => {
-      if (job.data.jobType === 'price-check') {
-        const { trackedProductId } = job.data;
+      if (job.name === 'price-check') {
+        const { trackedProductId } = job.data as PriceCheckJobData;
         console.log(`[worker] Price-check job for trackedProduct ${trackedProductId}`);
         const alertData = await priceCheckService.checkPrice(trackedProductId);
         if (alertData) {
@@ -52,8 +49,7 @@ async function startWorker(): Promise<void> {
         return;
       }
 
-      // Regular scrape job
-      const { jobDbId, query, queryType, filters } = job.data;
+      const { jobDbId, query, queryType, filters } = job.data as ScrapeJobData;
 
       await prisma.scrapeJob.update({
         where: { id: jobDbId },
@@ -87,16 +83,17 @@ async function startWorker(): Promise<void> {
 
   worker.on('failed', async (job, err) => {
     if (!job) return;
-    if (job.data.jobType === 'price-check') {
-      console.error(`[worker] Price-check job for trackedProduct ${job.data.trackedProductId} failed:`, err.message);
+    if (job.name === 'price-check') {
+      const { trackedProductId } = job.data as PriceCheckJobData;
+      console.error(`[worker] Price-check job for trackedProduct ${trackedProductId} failed:`, err.message);
       return;
     }
     const maxAttempts = job.opts.attempts ?? 1;
     if (job.attemptsMade >= maxAttempts) {
-      const scrapeJob = job.data as { jobDbId: string };
-      console.error(`[worker] Job ${scrapeJob.jobDbId} permanently failed:`, err.message);
+      const { jobDbId } = job.data as ScrapeJobData;
+      console.error(`[worker] Job ${jobDbId} permanently failed:`, err.message);
       await prisma.scrapeJob
-        .update({ where: { id: scrapeJob.jobDbId }, data: { status: 'FAILED', error: err.message } })
+        .update({ where: { id: jobDbId }, data: { status: 'FAILED', error: err.message } })
         .catch(console.error);
     }
   });
@@ -106,7 +103,6 @@ async function startWorker(): Promise<void> {
 
   const shutdown = async () => {
     await worker.close();
-    await notificationQueue.close();
     await prisma.$disconnect();
     process.exit(0);
   };

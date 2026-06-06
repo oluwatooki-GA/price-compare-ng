@@ -1,5 +1,4 @@
 export interface ScrapeJobData {
-  jobType?: 'scrape';
   jobDbId: string;
   query: string;
   queryType: 'keyword' | 'url';
@@ -15,7 +14,6 @@ export interface ScrapeJobData {
 }
 
 export interface PriceCheckJobData {
-  jobType: 'price-check';
   trackedProductId: number;
   productUrl: string;
   platform: string;

@@ -1,6 +1,6 @@
 import { Queue } from 'bullmq';
 import { config } from '../config/env';
-import type { ScrapeQueueData } from './types';
+import type { ScrapeQueueData, AlertJobData } from './types';
 
 const redisUrl = new URL(config.REDIS_URL);
 
@@ -17,7 +17,17 @@ export const scrapeQueue = new Queue<ScrapeQueueData>('scrape', {
   defaultJobOptions: {
     attempts: 3,
     backoff: { type: 'exponential', delay: 1000 },
-    removeOnComplete: { age: 3600 },  // keep completed jobs 1 hour
-    removeOnFail:    { age: 86400 },  // keep failed jobs 24 hours
+    removeOnComplete: { age: 3600 },
+    removeOnFail:    { age: 86400 },
+  },
+});
+
+export const notificationQueue = new Queue<AlertJobData>('notification', {
+  connection: bullmqConnection,
+  defaultJobOptions: {
+    attempts: 3,
+    backoff: { type: 'exponential', delay: 2000 },
+    removeOnComplete: { age: 3600 },
+    removeOnFail: { age: 86400 },
   },
 });

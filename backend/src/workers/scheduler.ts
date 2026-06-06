@@ -52,7 +52,6 @@ async function startScheduler(): Promise<void> {
         const jobs = batch.map(tp => ({
           name: 'price-check' as const,
           data: {
-            jobType: 'price-check' as const,
             trackedProductId: tp.id,
             productUrl: tp.productUrl,
             platform: tp.platform,
