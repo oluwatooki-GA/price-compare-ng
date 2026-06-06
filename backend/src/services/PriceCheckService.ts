@@ -1,4 +1,3 @@
-import { Queue } from 'bullmq';
 import { ScraperRegistry } from '../scrapers/registry';
 import { TrackedProductRepository } from '../repositories/TrackedProductRepository';
 import { TrackedPriceHistoryRepository } from '../repositories/TrackedPriceHistoryRepository';
@@ -11,17 +10,16 @@ export class PriceCheckService {
     private trackedProductRepository: TrackedProductRepository,
     private trackedPriceHistoryRepository: TrackedPriceHistoryRepository,
     private userRepository: UserRepository,
-    private notificationQueue: Queue<AlertJobData>,
   ) {}
 
-  async checkPrice(trackedProductId: number): Promise<void> {
+  async checkPrice(trackedProductId: number): Promise<AlertJobData | null> {
     const tracked = await this.trackedProductRepository.findById(trackedProductId);
-    if (!tracked || !tracked.isActive) return;
+    if (!tracked || !tracked.isActive) return null;
 
     const scraper = this.scraperRegistry.getScraperByPlatform(tracked.platform);
     if (!scraper) {
       console.warn(`[PriceCheckService] No scraper for platform: ${tracked.platform}`);
-      return;
+      return null;
     }
 
     let product;
@@ -30,7 +28,7 @@ export class PriceCheckService {
     } catch (err) {
       console.error(`[PriceCheckService] Failed to scrape ${tracked.productUrl}:`, err instanceof Error ? err.message : String(err));
       await this.trackedProductRepository.update(tracked.id, { lastCheckedAt: new Date() });
-      return;
+      return null;
     }
 
     const newPrice = product.price;
@@ -58,7 +56,7 @@ export class PriceCheckService {
     ) {
       const user = await this.userRepository.findById(tracked.userId);
       if (user) {
-        await this.notificationQueue.add('price-alert', {
+        return {
           trackedProductId: tracked.id,
           userEmail: user.email,
           productName: product.name || tracked.productName,
@@ -67,8 +65,10 @@ export class PriceCheckService {
           newPrice,
           threshold: tracked.alertThreshold,
           currency,
-        });
+        };
       }
     }
+
+    return null;
   }
 }

@@ -2,7 +2,7 @@ import 'dotenv/config';
 import { Worker, Queue } from 'bullmq';
 import { prisma } from '../config/database';
 import { connectRedis } from '../config/redis';
-import { bullmqConnection } from '../queue';
+import { bullmqConnection, scrapeQueue } from '../queue';
 import { TrackedProductRepository } from '../repositories/TrackedProductRepository';
 import type { PriceCheckJobData } from '../queue/types';
 
@@ -18,7 +18,6 @@ async function startScheduler(): Promise<void> {
   await connectRedis();
 
   const trackedProductRepository = new TrackedProductRepository(prisma);
-  const scrapeQueue = new Queue<PriceCheckJobData>('scrape', { connection: bullmqConnection });
 
   const schedulerQueue = new Queue('scheduler', {
     connection: bullmqConnection,
@@ -28,7 +27,6 @@ async function startScheduler(): Promise<void> {
     },
   });
 
-  // Ensure the repeating tick job exists
   await schedulerQueue.add(
     'tick',
     {},
@@ -59,7 +57,7 @@ async function startScheduler(): Promise<void> {
             productUrl: tp.productUrl,
             platform: tp.platform,
             userId: tp.userId,
-          },
+          } satisfies PriceCheckJobData,
           opts: { attempts: 2, backoff: { type: 'exponential' as const, delay: 5000 } },
         }));
 

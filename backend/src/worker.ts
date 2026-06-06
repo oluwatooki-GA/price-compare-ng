@@ -11,7 +11,7 @@ import { ScraperService } from './services/ScraperService';
 import { PriceCheckService } from './services/PriceCheckService';
 import { RepositoryContainer } from './repositories/RepositoryContainer';
 import { bullmqConnection } from './queue';
-import { notificationQueue } from './queue/notificationQueue';
+import { createNotificationQueue } from './queue/notificationQueue';
 import type { ScrapeQueueData } from './queue/types';
 
 async function startWorker(): Promise<void> {
@@ -34,8 +34,9 @@ async function startWorker(): Promise<void> {
     repositoryContainer.getTrackedProductRepository(),
     repositoryContainer.getTrackedPriceHistoryRepository(),
     repositoryContainer.getUserRepository(),
-    notificationQueue,
   );
+
+  const notificationQueue = createNotificationQueue();
 
   const worker = new Worker<ScrapeQueueData>(
     'scrape',
@@ -43,7 +44,10 @@ async function startWorker(): Promise<void> {
       if (job.data.jobType === 'price-check') {
         const { trackedProductId } = job.data;
         console.log(`[worker] Price-check job for trackedProduct ${trackedProductId}`);
-        await priceCheckService.checkPrice(trackedProductId);
+        const alertData = await priceCheckService.checkPrice(trackedProductId);
+        if (alertData) {
+          await notificationQueue.add('price-alert', alertData);
+        }
         console.log(`[worker] Price-check complete for trackedProduct ${trackedProductId}`);
         return;
       }

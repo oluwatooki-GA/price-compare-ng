@@ -1,5 +1,6 @@
 import { Queue } from 'bullmq';
 import { config } from '../config/env';
+import type { ScrapeQueueData } from './types';
 
 const redisUrl = new URL(config.REDIS_URL);
 
@@ -11,7 +12,7 @@ export const bullmqConnection = {
   maxRetriesPerRequest: null as unknown as number,
 };
 
-export const scrapeQueue = new Queue('scrape', {
+export const scrapeQueue = new Queue<ScrapeQueueData>('scrape', {
   connection: bullmqConnection,
   defaultJobOptions: {
     attempts: 3,
