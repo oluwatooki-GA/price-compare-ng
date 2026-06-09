@@ -39,19 +39,19 @@ jobs:
       - run: npm run lint
       - run: npx tsc --noEmit
 
-  deploy:
-    name: Deploy to Render
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    needs: [backend, frontend]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Deploy backend
-        run: curl -fsS "${{ secrets.RENDER_DEPLOY_HOOK_BACKEND }}"
-      - name: Deploy worker
-        run: curl -fsS "${{ secrets.RENDER_DEPLOY_HOOK_WORKER }}"
-      - name: Deploy scheduler
-        run: curl -fsS "${{ secrets.RENDER_DEPLOY_HOOK_SCHEDULER }}"
-      - name: Deploy notification-worker
-        run: curl -fsS "${{ secrets.RENDER_DEPLOY_HOOK_NOTIFICATION_WORKER }}"
-      - name: Deploy frontend
-        run: curl -fsS "${{ secrets.RENDER_DEPLOY_HOOK_FRONTEND }}"
+  # deploy:
+  #   name: Deploy to Render
+  #   if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+  #   needs: [backend, frontend]
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Deploy backend
+  #       run: curl -fsS "${{ secrets.RENDER_DEPLOY_HOOK_BACKEND }}"
+  #     - name: Deploy worker
+  #       run: curl -fsS "${{ secrets.RENDER_DEPLOY_HOOK_WORKER }}"
+  #     - name: Deploy scheduler
+  #       run: curl -fsS "${{ secrets.RENDER_DEPLOY_HOOK_SCHEDULER }}"
+  #     - name: Deploy notification-worker
+  #       run: curl -fsS "${{ secrets.RENDER_DEPLOY_HOOK_NOTIFICATION_WORKER }}"
+  #     - name: Deploy frontend
+  #       run: curl -fsS "${{ secrets.RENDER_DEPLOY_HOOK_FRONTEND }}"
