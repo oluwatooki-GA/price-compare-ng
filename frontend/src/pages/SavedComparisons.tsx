@@ -1,12 +1,16 @@
 import { useState } from 'react';
+import toast from 'react-hot-toast';
 import { useComparisons } from '../hooks/useComparisons';
+import { useTrackedProducts } from '../hooks/useTrackedProducts';
+import { useAuth } from '../hooks/useAuth';
 import { ProductCard } from '../components/comparison/ProductCard';
-// import { BestValueBadge } from '../components/comparison/BestValueBadge'; // TODO: Re-enable when needed
+import { TrackProductModal } from '../components/tracked/TrackProductModal';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { ErrorMessage } from '../components/common/ErrorMessage';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '../components/ui/button';
 import { ArrowLeft, Trash2, Search, BookmarkX, ChevronRight } from 'lucide-react';
+import type { ProductData } from '../types';
 
 // ── Group saved comparisons by their searchQuery ──────────────────────────────
 
@@ -133,11 +137,15 @@ const GroupDetail = ({
   group,
   onBack,
   onDelete,
+  onTrack,
+  trackedUrls,
   isDeleting,
 }: {
   group: SearchGroup;
   onBack: () => void;
   onDelete: (id: number) => void;
+  onTrack: (product: ProductData) => void;
+  trackedUrls: Set<string>;
   isDeleting: boolean;
 }) => {
   // Best value = cheapest available product in this group
@@ -199,7 +207,7 @@ const GroupDetail = ({
               isBestValue={product.url === bestValueUrl}
             />
 
-            {/* Delete button - fixed position inside the card, never shifts layout */}
+            {/* Delete button */}
             <button
               onClick={() => onDelete(item.id)}
               disabled={isDeleting}
@@ -207,6 +215,18 @@ const GroupDetail = ({
               className="absolute top-3 left-3 w-7 h-7 flex items-center justify-center rounded-full bg-[#0A0A0A]/80 border border-[#333] text-slate-500 hover:text-red-400 hover:border-red-400/40 transition-all disabled:opacity-40 backdrop-blur-sm cursor-pointer"
             >
               <Trash2 className="w-3.5 h-3.5" />
+            </button>
+
+            {/* Track button */}
+            <button
+              onClick={() => onTrack(product)}
+              className={`absolute top-3 right-3 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded backdrop-blur-sm transition-colors cursor-pointer ${
+                trackedUrls.has(product.url)
+                  ? 'bg-blue-500/20 text-blue-400'
+                  : 'bg-[#262626]/80 text-slate-400 hover:text-white hover:bg-[#333]'
+              }`}
+            >
+              {trackedUrls.has(product.url) ? '✓ Tracked' : 'Track'}
             </button>
           </motion.div>
         ))}
@@ -219,7 +239,44 @@ const GroupDetail = ({
 
 export const SavedComparisons = () => {
   const { comparisons, deleteComparison } = useComparisons();
+  const { trackProduct } = useTrackedProducts();
+  const { isAuthenticated } = useAuth();
   const [activeGroup, setActiveGroup] = useState<SearchGroup | null>(null);
+  const [trackingProduct, setTrackingProduct] = useState<ProductData | null>(null);
+  const [trackedUrls, setTrackedUrls] = useState<Set<string>>(new Set());
+
+  const handleTrackConfirm = (alertThreshold?: number, alertEnabled?: boolean) => {
+    if (!trackingProduct) return;
+    trackProduct.mutate(
+      {
+        productUrl: trackingProduct.url,
+        productName: trackingProduct.name,
+        platform: trackingProduct.platform,
+        imageUrl: trackingProduct.imageUrl,
+        searchQuery: activeGroup?.searchQuery,
+        currentPrice: trackingProduct.price,
+        alertThreshold,
+        alertEnabled,
+      },
+      {
+        onSuccess: () => {
+          setTrackedUrls(prev => new Set(prev).add(trackingProduct.url));
+          toast.success(`Now tracking: ${trackingProduct.name.slice(0, 40)}…`);
+          setTrackingProduct(null);
+        },
+        onError: (err: unknown) => {
+          const msg = (err as { response?: { data?: { message?: string } } }).response?.data?.message;
+          toast.error(msg ?? 'Failed to track product');
+          setTrackingProduct(null);
+        },
+      },
+    );
+  };
+
+  const handleTrackClick = (product: ProductData) => {
+    if (!isAuthenticated) { toast('Login to track products', { icon: '🔒' }); return; }
+    setTrackingProduct(product);
+  };
 
   if (comparisons.isLoading) {
     return (
@@ -262,6 +319,7 @@ export const SavedComparisons = () => {
   };
 
   return (
+    <>
     <div className="min-h-screen bg-[#0A0A0A] py-8 sm:py-12">
       <div className="container mx-auto px-4 sm:px-6 md:px-8 lg:px-16">
 
@@ -274,6 +332,8 @@ export const SavedComparisons = () => {
               group={activeGroup}
               onBack={() => setActiveGroup(null)}
               onDelete={handleDelete}
+              onTrack={handleTrackClick}
+              trackedUrls={trackedUrls}
               isDeleting={deleteComparison.isPending}
             />
           ) : (
@@ -335,5 +395,15 @@ export const SavedComparisons = () => {
         </AnimatePresence>
       </div>
     </div>
+
+    {trackingProduct && (
+      <TrackProductModal
+        product={trackingProduct}
+        onConfirm={handleTrackConfirm}
+        onClose={() => setTrackingProduct(null)}
+        isPending={trackProduct.isPending}
+      />
+    )}
+    </>
   );
 };
