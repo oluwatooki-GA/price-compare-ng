@@ -11,6 +11,8 @@ import { authRouter } from './api/v1/auth/routes';
 import { searchRouter, disconnectSearchService } from './api/v1/search/routes';
 import { comparisonRouter } from './api/v1/comparisons/routes';
 import { jobsRouter } from './api/v1/jobs/routes';
+import { trackedProductsRouter } from './api/v1/tracked-products/routes';
+import { dashboardRouter } from './api/v1/dashboard/routes';
 import { errorHandler } from './middleware/errorHandler';
 import { enableRedisRateLimiting } from './middleware/rateLimiter';
 import { scrapeQueue } from './queue';
@@ -40,6 +42,8 @@ function createApp(): Application {
   app.use('/api/v1/search', searchRouter);
   app.use('/api/v1/comparisons', comparisonRouter);
   app.use('/api/v1/jobs', jobsRouter);
+  app.use('/api/v1/tracked-products', trackedProductsRouter);
+  app.use('/api/v1/dashboard', dashboardRouter);
 
   app.use(errorHandler);
 

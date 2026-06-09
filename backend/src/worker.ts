@@ -8,8 +8,10 @@ import { JijiScraper } from './scrapers/jiji';
 import { KongaScraper } from './scrapers/konga';
 import { NormalizationService } from './api/v1/search/normalization';
 import { ScraperService } from './services/ScraperService';
-import { bullmqConnection } from './queue';
-import type { ScrapeJobData } from './queue/types';
+import { PriceCheckService } from './services/PriceCheckService';
+import { RepositoryContainer } from './repositories/RepositoryContainer';
+import { bullmqConnection, notificationQueue } from './queue';
+import type { ScrapeQueueData, ScrapeJobData, PriceCheckJobData } from './queue/types';
 
 async function startWorker(): Promise<void> {
   await connectRedis();
@@ -25,10 +27,29 @@ async function startWorker(): Promise<void> {
     redisClient,
   );
 
-  const worker = new Worker<ScrapeJobData>(
+  const repositoryContainer = RepositoryContainer.getInstance(prisma);
+  const priceCheckService = new PriceCheckService(
+    scraperRegistry,
+    repositoryContainer.getTrackedProductRepository(),
+    repositoryContainer.getTrackedPriceHistoryRepository(),
+    repositoryContainer.getUserRepository(),
+  );
+
+  const worker = new Worker<ScrapeQueueData>(
     'scrape',
     async (job) => {
-      const { jobDbId, query, queryType, filters } = job.data;
+      if (job.name === 'price-check') {
+        const { trackedProductId } = job.data as PriceCheckJobData;
+        console.log(`[worker] Price-check job for trackedProduct ${trackedProductId}`);
+        const alertData = await priceCheckService.checkPrice(trackedProductId);
+        if (alertData) {
+          await notificationQueue.add('price-alert', alertData);
+        }
+        console.log(`[worker] Price-check complete for trackedProduct ${trackedProductId}`);
+        return;
+      }
+
+      const { jobDbId, query, queryType, filters } = job.data as ScrapeJobData;
 
       await prisma.scrapeJob.update({
         where: { id: jobDbId },
@@ -62,17 +83,23 @@ async function startWorker(): Promise<void> {
 
   worker.on('failed', async (job, err) => {
     if (!job) return;
+    if (job.name === 'price-check') {
+      const { trackedProductId } = job.data as PriceCheckJobData;
+      console.error(`[worker] Price-check job for trackedProduct ${trackedProductId} failed:`, err.message);
+      return;
+    }
     const maxAttempts = job.opts.attempts ?? 1;
     if (job.attemptsMade >= maxAttempts) {
-      console.error(`[worker] Job ${job.data.jobDbId} permanently failed:`, err.message);
+      const { jobDbId } = job.data as ScrapeJobData;
+      console.error(`[worker] Job ${jobDbId} permanently failed:`, err.message);
       await prisma.scrapeJob
-        .update({ where: { id: job.data.jobDbId }, data: { status: 'FAILED', error: err.message } })
+        .update({ where: { id: jobDbId }, data: { status: 'FAILED', error: err.message } })
         .catch(console.error);
     }
   });
 
   worker.on('error', err => console.error('[worker] Worker error:', err));
-  console.log('[worker] Started — waiting for scrape jobs...');
+  console.log('[worker] Started — waiting for scrape and price-check jobs...');
 
   const shutdown = async () => {
     await worker.close();

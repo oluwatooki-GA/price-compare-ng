@@ -145,11 +145,10 @@ export const UnifiedSearch = () => {
     }
   };
 
-  const isJumiaOrJijiUrl = (text: string): boolean => {
+  const isSupportedUrl = (text: string): boolean => {
     try {
-      const url = new URL(text);
-      const hostname = url.hostname.toLowerCase();
-      return hostname.includes('jumia') || hostname.includes('jiji');
+      const hostname = new URL(text).hostname.toLowerCase();
+      return hostname.includes('jumia') || hostname.includes('jiji') || hostname.includes('konga');
     } catch {
       return false;
     }
@@ -164,8 +163,8 @@ export const UnifiedSearch = () => {
 
     if (isUrl) {
       // URL Search - scrape first, then show filters
-      if (!isJumiaOrJijiUrl(trimmedInput)) {
-        setInputError('URL must be from Jumia or Jiji');
+      if (!isSupportedUrl(trimmedInput)) {
+        setInputError('URL must be from Jumia, Jiji, or Konga');
         return;
       }
 
@@ -211,7 +210,7 @@ export const UnifiedSearch = () => {
 
         setStep('filters');
       } catch {
-        setInputError("Failed to scrape that URL. Make sure it's from Jumia or Jiji.");
+        setInputError("Failed to scrape that URL. Make sure it's from Jumia, Jiji, or Konga.");
         setStep('input');
       }
     } else {

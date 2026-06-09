@@ -6,6 +6,7 @@ import { Login } from './pages/Login';
 import { Register } from './pages/Register';
 import { SearchResults } from './pages/SearchResults';
 import { SavedComparisons } from './pages/SavedComparisons';
+import { Dashboard } from './pages/Dashboard';
 import { Toaster } from 'react-hot-toast';
 
 // inside your root return:
@@ -24,6 +25,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <SavedComparisons />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
               </ProtectedRoute>
             }
           />

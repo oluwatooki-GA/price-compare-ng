@@ -1,205 +1,149 @@
-# 🛒 PriceCompare NG
+# PriceCompare NG
 
-<div align="center">
+Compare prices across Jumia, Konga, and Jiji from a single interface.
 
-![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)
-![React](https://img.shields.io/badge/React-19-cyan)
-![Node.js](https://img.shields.io/badge/Node.js-20-green)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-blue)
-![Docker](https://img.shields.io/badge/Docker-Ready-blue)
-
-**Compare prices across Jumia, Konga & Jiji in seconds**
-
-[Live Demo](https://price-compare-ng-frontend.onrender.com) • [API](https://price-compare-ng-backend.onrender.com/api-docs)
-
-</div>
+[Live Demo](https://price-compare-ng-frontend.onrender.com) | [API Docs](https://price-compare-ng-backend.onrender.com/api-docs)
 
 ---
 
-## 🎯 The Problem
+## Features
 
-Nigerian e-commerce shoppers waste time switching between tabs to compare prices across platforms. Often, they miss better deals or buy from overpriced sellers.
+- **Keyword and URL search** — search by term or paste a product URL to find it across all platforms
+- **Async job queue** — searches run in a background worker; the API returns a `jobId` immediately and the UI polls until complete
+- **Price tracking** — track specific products; prices are re-checked every 3 days automatically; tracked products are grouped on the dashboard by the search query that originated them
+- **Track from saved comparisons** — track any product directly from your saved comparisons list without re-searching
+- **Price alerts** — set a threshold; receive an email when a product drops below it
+- **Save comparisons** — bookmark up to 50 products per account
+- **Best value badge** — highlights the cheapest available option
+- **Redis caching** — 5-minute result cache and deduplication prevent redundant scrapes
+- **Queue dashboard** — Bull Board at `/admin/queues` for live job monitoring
 
-**PriceCompare NG solves this** by aggregating product data from multiple Nigerian e-commerce platforms into one unified interface.
+---
 
-## ✨ Key Features
+## System Design
 
-| Feature | Description |
-|---------|-------------|
-| **🔗 URL Search** | Paste any Jumia/Jiji link → instantly find similar products with price comparisons |
-| **🔍 Keyword Search** | Search across all platforms with price range and rating filters |
-| **⚙️ Async Job Queue** | Searches run as background jobs (BullMQ); the API returns a `jobId` instantly and the UI polls until results are ready |
-| **💾 Save Comparisons** | Keep track of products you're interested in (up to 50 saved items) |
-| **⭐ Best Value Badge** | Automatically highlights the cheapest available deal |
-| **📱 Mobile Responsive** | Fully optimized for mobile with animated hamburger menu |
-| **🔒 Secure Auth** | JWT-based authentication with bcrypt password hashing |
-| **🔄 Redis** | Shared Redis powers the job queue, the 5-minute result cache, and rate limiting |
-| **📊 Queue Dashboard** | Bull Board UI at `/admin/queues` for live job monitoring |
+### Processes
 
-## 🏗️ Architecture
+The application runs as four separate processes:
 
-Searches are **asynchronous**. The API process never scrapes — it enqueues a job
-and returns a `jobId`. A separate **worker** process consumes jobs from the
-BullMQ queue, runs the scrapers, and writes results back to PostgreSQL. The
-frontend polls `GET /api/v1/jobs/:jobId` until the job is `COMPLETED` or `FAILED`.
+| Process | Role |
+|---|---|
+| `backend` | Express API — handles HTTP requests, enqueues jobs, serves results |
+| `worker` | BullMQ consumer — runs scrapers and price-checks, publishes alert jobs |
+| `scheduler` | Fires every 3 days — enqueues price-check jobs for all active tracked products |
+| `notification-worker` | BullMQ consumer — sends alert emails via Nodemailer/Gmail |
 
-```mermaid
-flowchart TB
-    subgraph Frontend
-        UI["React UI"]
-        Hooks["useSearch (polls every 2s)"]
-    end
+The API process never scrapes directly. Scraping and price-checking are always handled out-of-process by the worker.
 
-    subgraph API["API Process"]
-        Routes["Express Routes"]
-        Submit["SearchSubmitService"]
-        JobsRoute["Jobs Route"]
-    end
+### Queues
 
-    subgraph WorkerProc["Worker Process"]
-        Worker["BullMQ Worker"]
-        Scraper["ScraperService"]
-        S1["Jumia"]
-        S2["Konga"]
-        S3["Jiji"]
-    end
+Two BullMQ queues backed by the shared Redis instance:
 
-    subgraph Data
-        Redis[("Redis<br/>queue · cache · rate limit")]
-        DB[("PostgreSQL<br/>jobs · users · comparisons")]
-    end
-
-    UI --> Hooks -->|"POST /search/keyword"| Routes
-    Routes --> Submit -->|"enqueue"| Redis
-    Submit -->|"create ScrapeJob (PENDING)"| DB
-    Hooks -->|"poll GET /jobs/:id"| JobsRoute --> DB
-    Redis -->|"job"| Worker --> Scraper --> S1 & S2 & S3
-    Worker -->|"save results (COMPLETED)"| DB
-```
+| Queue | Producer | Consumer | Job names |
+|---|---|---|---|
+| `scrape` | API routes (search), scheduler | `worker` | `keyword`, `url`, `price-check` |
+| `notification` | `worker` | `notification-worker` | `price-alert` |
 
 ### Async search flow
 
-1. `POST /api/v1/search/keyword` → `SearchSubmitService` checks for a recent
-   completed job (cache hit → `200` with results) or an in-flight duplicate
-   (dedup → returns its `jobId`), otherwise creates a `ScrapeJob` and enqueues
-   it → `202 { jobId, status: "PENDING" }`.
-2. The **worker** picks up the job, runs `ScraperService` across all platforms,
-   normalizes results, and updates the job to `COMPLETED` (or `FAILED`).
-3. The frontend polls `GET /api/v1/jobs/:jobId` every 2s until it settles.
+```
+POST /search/keyword
+  → SearchSubmitService checks for a recent completed job (cache hit → 200 with results)
+  → or an in-flight duplicate (dedup → returns existing jobId)
+  → otherwise: INSERT ScrapeJob (PENDING), enqueue 'keyword' job → 202 { jobId }
 
-### Design Patterns
+Worker picks up job
+  → ScraperService scrapes all platforms in parallel
+  → UPDATE ScrapeJob (COMPLETED, results)
 
-- **Job Queue / Worker** - Scraping runs out-of-process via BullMQ; the API stays fast and the worker scales independently
-- **Adapter Pattern** - Platform scrapers extend a base `ScraperAdapter` class for easy extensibility
-- **Service Layer** - Business logic in `services/` (`SearchSubmitService`, `ScraperService`, `AuthService`, …), separate from HTTP routes
-- **Repository Pattern** - Data access isolated in `repositories/` (Prisma); routes and services never query Prisma directly
-- **Shared Redis Client** - A single `config/redis.ts` connection backs the queue, cache, and rate limiter
-- **Rate Limiting** - Redis-backed, IP-based for anonymous and user-based for authenticated requests
-
-### Tech Stack
-
-**Backend:** Express.js, TypeScript, BullMQ, Prisma ORM, PostgreSQL, Redis, JWT, Cheerio
-
-**Frontend:** React 19, Vite, TailwindCSS, Framer Motion, TanStack Query, React Router
-
-**Infrastructure:** Docker, Docker Compose
-
-**Load testing:** k6
-
-## 🚀 Quick Start with Docker
-
-The easiest way to run this project is using Docker Compose:
-
-```bash
-# Clone the repo
-git clone https://github.com/oluwatooki-GA/price-compare-ng.git
-cd price-compare-ng
-
-# Start all services (postgres, redis, backend, frontend)
-docker compose up --build
-
-# Access the application
-# Frontend:    http://localhost:5173
-# Backend API: http://localhost:3000
-# API Docs:    http://localhost:3000/api-docs
-# Queue Board: http://localhost:3000/admin/queues
+Frontend polls GET /jobs/:jobId every 2s until settled (hard stop at 2 minutes)
 ```
 
-That's it! Docker handles all dependencies including PostgreSQL and Redis.
+### Price tracking flow
 
-> In development the backend builds from `Dockerfile.dev`, which runs
-> `prisma db push` to sync the schema on every start. The production `Dockerfile`
-> runs `prisma migrate deploy` against the committed migrations instead.
+```
+POST /tracked-products  (from search results or saved comparisons)
+  → TrackedProductService creates TrackedProduct row; stores originating searchQuery
+  → seeds first TrackedPriceHistory entry if current price provided
 
-### Docker Services
+Scheduler fires every 3 days
+  → reads all active TrackedProducts in batches of 100
+  → enqueues 'price-check' jobs on the scrape queue
 
-| Service | Port | Description |
-|---------|------|-------------|
-| Frontend | 5173 | React app with Vite HMR |
-| Backend | 3000 | Express API (enqueues jobs, serves results) |
-| Worker | — | BullMQ worker process that runs the scrapers |
-| PostgreSQL | 5432 | Database (jobs, users, saved comparisons) |
-| Redis | 6379 | Job queue, result cache & rate limiting |
+Worker receives 'price-check' job
+  → PriceCheckService re-scrapes the product URL
+  → appends a TrackedPriceHistory row
+  → updates lastKnownPrice, lastCheckedAt
+  → if alertEnabled && newPrice <= alertThreshold:
+      returns AlertJobData to the worker
+  → worker publishes to notification queue
 
-Scale the worker to process more jobs in parallel:
+notification-worker receives job
+  → AlertEmailService sends HTML email via Gmail SMTP
+  → retries 3x with exponential backoff on failure
+```
+
+### Key patterns
+
+- **Repository pattern** — all Prisma access is isolated in `repositories/`; routes and services never query directly
+- **Service layer** — business logic in `services/`; services have no knowledge of HTTP or queues
+- **Adapter pattern** — scrapers extend a base `ScraperAdapter`; adding a new platform means one new file
+- **Singleton queues** — queue instances are created once at module load and imported wherever needed
+- **Shared Redis** — one `config/redis.ts` connection backs the job queue, result cache, and rate limiter
+
+### Tech stack
+
+**Backend:** Express, TypeScript, BullMQ, Prisma, PostgreSQL, Redis, Cheerio
+
+**Frontend:** React 19, Vite, TailwindCSS, Framer Motion, TanStack Query
+
+**Infrastructure:** Docker, Docker Compose, k6
+
+---
+
+## Quick Start
+
+```bash
+git clone https://github.com/oluwatooki-GA/price-compare-ng.git
+cd price-compare-ng
+docker compose up --build
+```
+
+| URL | Service |
+|---|---|
+| http://localhost:5173 | Frontend |
+| http://localhost:3000 | Backend API |
+| http://localhost:3000/api-docs | Swagger docs |
+| http://localhost:3000/admin/queues | Bull Board |
+
+Scale the worker to process more jobs concurrently:
 
 ```bash
 docker compose up -d --scale worker=3
 ```
 
-## 📸 Screenshots
+---
 
-<div align="center">
-  <img src="screenshots/home.png" alt="Home Page" width="400"/>
-  <img src="screenshots/home form.png" alt="URL Input Form" width="400"/>
-</div>
+## Docker Services
 
-<div align="center">
-  <img src="screenshots/search results.png" alt="Search Results" width="400"/>
-  <img src="screenshots/saved comparisons general.png" alt="Saved Comparisons" width="400"/>
-</div>
+| Service | Description |
+|---|---|
+| `frontend` | React app (Vite HMR on port 5173) |
+| `backend` | Express API (port 3000) |
+| `worker` | Scrape + price-check worker |
+| `scheduler` | Enqueues price-check jobs every 3 days |
+| `notification-worker` | Sends price alert emails |
+| `postgres` | PostgreSQL 17 (port 5432) |
+| `redis` | Redis (port 6379) |
 
-<div align="center">
-  <img src="screenshots/login.png" alt="Login" width="300"/>
-  <img src="screenshots/register.png" alt="Register" width="300"/>
-</div>
+In development the backend runs `prisma db push` on startup. The production Dockerfile runs `prisma migrate deploy` against committed migrations.
 
-## 📂 Project Structure
+---
 
-```
-├── backend/
-│   ├── src/
-│   │   ├── api/v1/        # HTTP routes only (auth, search, comparisons, jobs)
-│   │   ├── services/      # Business logic (SearchSubmit, Scraper, Auth, …)
-│   │   ├── repositories/  # Data access (Prisma) — incl. ScrapeJobRepository
-│   │   ├── scrapers/      # Platform adapters (Jumia, Konga, Jiji)
-│   │   ├── queue/         # BullMQ queue definition + job types
-│   │   ├── middleware/    # auth, rate limiting, error handling
-│   │   ├── config/        # env, database, shared redis client, security
-│   │   ├── server.ts      # Express API entry point
-│   │   └── worker.ts      # Standalone BullMQ worker process
-│   ├── __tests__/        # unit / integration / e2e (Vitest)
-│   ├── prisma/           # Schema and migrations
-│   ├── Dockerfile        # Production image (migrate deploy)
-│   ├── Dockerfile.dev    # Dev image (db push + hot reload)
-│   └── .env.sample       # Environment template
-├── frontend/
-│   ├── src/
-│   │   ├── components/   # Reusable UI components
-│   │   ├── pages/        # Route-level pages
-│   │   ├── hooks/        # Custom React hooks (useSearch polls jobs)
-│   │   └── api/          # API client functions
-│   └── Dockerfile        # Container definition
-├── tests/load/           # k6 load tests (search.js, worker-stress.js)
-├── docker-compose.yml    # Service orchestration
-└── .env.sample          # Root environment template
-```
+## Environment Variables
 
-## 🔧 Environment Variables
+**`backend/.env`:**
 
-Copy `.env.sample` to `.env` in each directory:
-
-**Backend (`backend/.env`):**
 ```env
 PORT=3000
 NODE_ENV=development
@@ -207,74 +151,70 @@ DATABASE_URL=postgresql://pricecompare:pricecompare123@postgres:5432/pricecompar
 JWT_SECRET=your-super-secret-jwt-key-minimum-32-characters-long
 REDIS_URL=redis://redis:6379
 CORS_ORIGINS=http://localhost:5173
-# Load testing only — bypasses rate limiting. NEVER true in production.
+
+# Optional — enables price alert emails
+GMAIL_USER=your-address@gmail.com
+GMAIL_APP_PASSWORD=xxxx xxxx xxxx xxxx
+
+# Load testing only — bypasses rate limiting
 DISABLE_RATE_LIMIT=false
 ```
 
-**Frontend (`frontend/.env`):**
+**`frontend/.env`:**
+
 ```env
 VITE_API_BASE_URL=http://localhost:3000/api/v1
 ```
 
-## 🧪 Testing
+To get a Gmail App Password: Google Account > Security > 2-Step Verification > App Passwords.
 
-```bash
-# Backend tests (Vitest — unit + integration)
-docker compose exec backend npm test
+---
 
-# Frontend linting
-docker compose exec frontend npm run lint
+## Project Structure
+
+```
+backend/src/
+  api/v1/          HTTP routes (auth, search, jobs, tracked-products, dashboard)
+  services/        Business logic (SearchSubmit, Scraper, Auth, TrackedProduct, PriceCheck, AlertEmail)
+  repositories/    Prisma data access
+  scrapers/        Platform adapters (Jumia, Konga, Jiji)
+  queue/           BullMQ queue singletons and job type definitions
+  workers/         scheduler.ts, notification-worker.ts
+  middleware/      auth, rate limiting, error handling
+  config/          env, database, redis, security
+  server.ts        API entry point
+  worker.ts        Scrape + price-check worker entry point
+
+frontend/src/
+  pages/           Dashboard, SearchResults, Home, Login, Register, SavedComparisons
+  components/      Layout, tracked product modal, UI primitives
+  hooks/           useSearch (polls jobs, 2-min hard stop), useTrackedProducts, useComparisons
+  api/             API client functions
+
+tests/load/        k6 load tests (search.js, worker-stress.js)
+prisma/            Schema and migrations
 ```
 
-### Load testing (k6)
+---
 
-Two k6 scenarios live in `tests/load/` — see [`tests/load/README.md`](tests/load/README.md)
-for full instructions:
-
-- **`search.js`** — 50 users hitting shared queries; stresses the **API** and
-  exercises the cache/dedup path.
-- **`worker-stress.js`** — 50 users with unique, uncached queries so every
-  request creates a real job; stresses the **worker pool** (threshold: 95% of
-  jobs complete within 60s).
+## Testing
 
 ```bash
-# from the repo root, with the stack running
+# Unit + integration tests (Vitest)
+docker compose exec backend npm test
+
+# Load tests (requires stack running)
+# Set DISABLE_RATE_LIMIT=true before running
 k6 run tests/load/search.js
 k6 run tests/load/worker-stress.js
 ```
 
-> Set `DISABLE_RATE_LIMIT=true` in `backend/.env` before load testing, otherwise
-> 50 users from one IP trip the rate limiter.
+`search.js` — 50 users hitting shared queries; exercises the cache and dedup path.
 
-## 🔮 Future Enhancements
-
-- [ ] Price history tracking and alerts
-- [ ] Email notifications for price drops
-- [ ] Chrome extension for one-click price comparisons
-- [ ] Support for more Nigerian e-commerce platforms
-- [ ] Product review aggregation
-
-## 💡 What I Learned
-
-Building this project taught me:
-
-- **Async Architecture** - Decoupling slow scraping from the request cycle with a BullMQ job queue and a standalone worker process
-- **Clean Architecture** - Separating HTTP routes, service-layer business logic, and repository data access
-- **Web Scraping Challenges** - Handling dynamic content, rate limits, and HTML parsing
-- **Database Design** - Designing schemas for many-to-many relationships
-- **Type Safety** - Leveraging TypeScript across the full stack
-- **State Management** - Using TanStack Query for server state vs React state
-- **Authentication Flow** - Implementing secure JWT auth with proper token management
-- **Docker Deployment** - Containerizing full-stack applications with orchestration
-- **Caching Strategies** - Implementing Redis for performance optimization
-- **Load Testing** - Profiling API vs worker bottlenecks with k6
-
-## 📄 License
-
-MIT License - feel free to use this project for learning or inspiration.
+`worker-stress.js` — 50 users with unique uncached queries; every request creates a real job and stresses the worker pool.
 
 ---
 
-<div align="center">
-Built with ❤️ for Nigerian shoppers
-</div>
+## License
+
+MIT

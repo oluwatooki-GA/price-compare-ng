@@ -26,10 +26,12 @@ export type JobPhase = 'idle' | 'queued' | 'scraping';
 export const useSearch = () => {
   const [jobPhase, setJobPhase] = useState<JobPhase>('idle');
 
-  // Poll GET /jobs/:jobId every 2 s until the job settles
+  // Poll GET /jobs/:jobId every 2 s until the job settles, hard stop at 2 minutes
   async function pollUntilDone(jobId: string): Promise<ComparisonResult[]> {
+    const deadline = Date.now() + 2 * 60 * 1000;
     while (true) {
       await new Promise<void>(resolve => setTimeout(resolve, 2000));
+      if (Date.now() >= deadline) throw new Error('Search timed out after 2 minutes. Please try again.');
       const job = await searchApi.getJobStatus(jobId);
       if (job.status === 'RUNNING')    setJobPhase('scraping');
       if (job.status === 'COMPLETED')  return job.results ?? [];

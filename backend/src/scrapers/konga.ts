@@ -185,57 +185,52 @@ export class KongaScraper extends ScraperAdapter {
 
     const $ = cheerio.load(html);
 
-    // ── Primary: parse __NEXT_DATA__ JSON (Next.js SSR data blob) ──────────
-    const nextDataScript = $('#__NEXT_DATA__').html();
-    if (nextDataScript) {
+    // ── Primary: JSON-LD structured data ────────────────────────────────────
+    // Konga embeds product data in <script type="application/ld+json"> on every
+    // product page. This is more reliable than __NEXT_DATA__ (pageProps is empty)
+    // or HTML scraping (prices are client-side rendered).
+    let ldJson: any = null;
+    $('script[type="application/ld+json"]').each((_i, el) => {
+      if (ldJson) return;
       try {
-        const nextData = JSON.parse(nextDataScript);
-        // Konga stores product info at props.pageProps.product or
-        // props.pageProps.initialState.product depending on the page version
-        const product =
-            nextData?.props?.pageProps?.product ??
-            nextData?.props?.pageProps?.initialState?.product ??
-            nextData?.props?.pageProps?.data?.product;
-
-        if (product) {
-          const name: string = product.name ?? product.title ?? '';
-          if (!name) throw new ScrapingError('Product name not found in __NEXT_DATA__');
-
-          // special_price is the discounted price, price is RRP
-          const price: number =
-              Number(product.special_price || product.price) || 0;
-          if (price <= 0) throw new ScrapingError('Product price not found in __NEXT_DATA__');
-
-          const imagePath: string = product.image_thumbnail_path ?? product.image ?? '';
-          const imageUrl: string | null = imagePath
-              ? `${IMAGE_BASE_URL}${imagePath}`
-              : null;
-
-          const rating: number | null =
-              (product.product_rating?.quality?.average ?? 0) > 0
-                  ? product.product_rating.quality.average
-                  : null;
-
-          const reviewCount: number =
-              Number(product.product_rating?.quality?.number_of_ratings ?? 0);
-
-          return {
-            platform: this.platformName,
-            name,
-            price,
-            currency: 'NGN',
-            rating,
-            reviewCount,
-            url,
-            availability: product.stock?.in_stock ?? true,
-            imageUrl,
-          };
+        const parsed = JSON.parse($(el).html() ?? '');
+        const candidates = Array.isArray(parsed) ? parsed : [parsed];
+        for (const item of candidates) {
+          // Product is nested under ItemPage.mainEntity
+          const product = item?.mainEntity ?? item;
+          if (product?.offers?.price) { ldJson = product; break; }
         }
-      } catch (e) {
-        if (e instanceof ScrapingError) throw e;
-        // JSON parse or path access failed — fall through to HTML scraping
-        console.warn('Konga __NEXT_DATA__ parse failed, falling back to HTML:', e);
-      }
+      } catch {}
+    });
+
+    if (ldJson) {
+      const name: string = ldJson.name ?? '';
+      if (!name) throw new ScrapingError('Product name not found in JSON-LD');
+
+      const price = Number(ldJson.offers?.price);
+      if (!price || price <= 0) throw new ScrapingError('Product price not found in JSON-LD');
+
+      const currency: string = ldJson.offers?.priceCurrency ?? 'NGN';
+      const availability = ldJson.offers?.availability !== 'OutOfStock';
+      const imageUrl: string | null = ldJson.image ?? null;
+
+      const rating: number | null =
+          (ldJson.aggregateRating?.ratingValue ?? 0) > 0
+              ? ldJson.aggregateRating.ratingValue
+              : null;
+      const reviewCount: number = Number(ldJson.aggregateRating?.reviewCount ?? 0);
+
+      return {
+        platform: this.platformName,
+        name,
+        price,
+        currency,
+        rating,
+        reviewCount,
+        url,
+        availability,
+        imageUrl,
+      };
     }
 
     // ── Fallback: HTML scraping ─────────────────────────────────────────────

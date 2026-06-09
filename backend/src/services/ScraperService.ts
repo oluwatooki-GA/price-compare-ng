@@ -143,7 +143,7 @@ export class ScraperService {
     async searchByUrl(url: string): Promise<ComparisonResult> {
         const validation = this.validateUrl(url);
         if (!validation.isValid || !validation.platform) {
-            throw new ValidationError('Invalid URL. Please provide a valid product URL from a supported platform (Jumia or Konga).');
+            throw new ValidationError('Invalid URL. Please provide a valid product URL from a supported platform (Jumia, Konga, or Jiji).');
         }
 
         const cacheKey = `search:url:${url}`;

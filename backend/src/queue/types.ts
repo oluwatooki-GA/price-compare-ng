@@ -12,3 +12,23 @@ export interface ScrapeJobData {
     limit?: number;
   };
 }
+
+export interface PriceCheckJobData {
+  trackedProductId: number;
+  productUrl: string;
+  platform: string;
+  userId: number;
+}
+
+export interface AlertJobData {
+  trackedProductId: number;
+  userEmail: string;
+  productName: string;
+  productUrl: string;
+  platform: string;
+  newPrice: number;
+  threshold: number;
+  currency: string;
+}
+
+export type ScrapeQueueData = ScrapeJobData | PriceCheckJobData;
