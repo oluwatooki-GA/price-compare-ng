@@ -45,7 +45,6 @@ export class PriceCheckService {
       lastKnownPrice: newPrice,
       lastCheckedAt: new Date(),
       productName: product.name || tracked.productName,
-      imageUrl: product.imageUrl ?? tracked.imageUrl ?? undefined,
     });
 
     if (

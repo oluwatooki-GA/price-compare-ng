@@ -27,6 +27,7 @@ model TrackedProduct {
   productName    String
   platform       String
   imageUrl       String?
+  searchQuery    String?
   lastKnownPrice Float?
   alertThreshold Float?
   alertEnabled   Boolean               @default(false)

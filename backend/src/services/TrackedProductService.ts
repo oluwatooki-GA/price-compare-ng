@@ -18,6 +18,7 @@ export class TrackedProductService {
     productName: string;
     platform: string;
     imageUrl?: string;
+    searchQuery?: string;
     currentPrice?: number;
     alertThreshold?: number;
     alertEnabled?: boolean;
@@ -38,6 +39,7 @@ export class TrackedProductService {
       productName: data.productName,
       platform: data.platform,
       imageUrl: data.imageUrl,
+      searchQuery: data.searchQuery,
       lastKnownPrice: data.currentPrice,
       alertThreshold: data.alertThreshold,
       alertEnabled: data.alertEnabled ?? false,

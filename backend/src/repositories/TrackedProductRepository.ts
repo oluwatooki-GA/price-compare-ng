@@ -13,6 +13,7 @@ export class TrackedProductRepository extends Repository<TrackedProduct> impleme
     productName: string;
     platform: string;
     imageUrl?: string;
+    searchQuery?: string;
     lastKnownPrice?: number;
     alertThreshold?: number;
     alertEnabled?: boolean;

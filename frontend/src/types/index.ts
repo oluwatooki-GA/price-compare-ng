@@ -59,6 +59,7 @@ export interface TrackedProduct {
   productName: string;
   platform: string;
   imageUrl: string | null;
+  searchQuery: string | null;
   lastKnownPrice: number | null;
   alertThreshold: number | null;
   alertEnabled: boolean;

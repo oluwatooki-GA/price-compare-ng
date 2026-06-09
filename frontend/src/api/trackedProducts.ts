@@ -6,6 +6,7 @@ export interface TrackProductRequest {
   productName: string;
   platform: string;
   imageUrl?: string | null;
+  searchQuery?: string;
   currentPrice?: number;
   alertThreshold?: number;
   alertEnabled?: boolean;

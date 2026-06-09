@@ -144,6 +144,7 @@ export const SearchResults = () => {
         productName: trackingProduct.name,
         platform: trackingProduct.platform,
         imageUrl: trackingProduct.imageUrl,
+        searchQuery: query,
         currentPrice: trackingProduct.price,
         alertThreshold,
         alertEnabled,
