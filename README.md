@@ -10,7 +10,8 @@ Compare prices across Jumia, Konga, and Jiji from a single interface.
 
 - **Keyword and URL search** — search by term or paste a product URL to find it across all platforms
 - **Async job queue** — searches run in a background worker; the API returns a `jobId` immediately and the UI polls until complete
-- **Price tracking** — track specific products; prices are re-checked every 3 days automatically
+- **Price tracking** — track specific products; prices are re-checked every 3 days automatically; tracked products are grouped on the dashboard by the search query that originated them
+- **Track from saved comparisons** — track any product directly from your saved comparisons list without re-searching
 - **Price alerts** — set a threshold; receive an email when a product drops below it
 - **Save comparisons** — bookmark up to 50 products per account
 - **Best value badge** — highlights the cheapest available option
@@ -43,8 +44,6 @@ Two BullMQ queues backed by the shared Redis instance:
 | `scrape` | API routes (search), scheduler | `worker` | `keyword`, `url`, `price-check` |
 | `notification` | `worker` | `notification-worker` | `price-alert` |
 
-Both queue singletons are exported from `backend/src/queue/index.ts`. The worker dispatches on `job.name` — no `jobType` field in the payload.
-
 ### Async search flow
 
 ```
@@ -57,14 +56,14 @@ Worker picks up job
   → ScraperService scrapes all platforms in parallel
   → UPDATE ScrapeJob (COMPLETED, results)
 
-Frontend polls GET /jobs/:jobId every 2s until settled
+Frontend polls GET /jobs/:jobId every 2s until settled (hard stop at 2 minutes)
 ```
 
 ### Price tracking flow
 
 ```
-POST /tracked-products
-  → TrackedProductService creates TrackedProduct row
+POST /tracked-products  (from search results or saved comparisons)
+  → TrackedProductService creates TrackedProduct row; stores originating searchQuery
   → seeds first TrackedPriceHistory entry if current price provided
 
 Scheduler fires every 3 days
@@ -89,7 +88,7 @@ notification-worker receives job
 - **Repository pattern** — all Prisma access is isolated in `repositories/`; routes and services never query directly
 - **Service layer** — business logic in `services/`; services have no knowledge of HTTP or queues
 - **Adapter pattern** — scrapers extend a base `ScraperAdapter`; adding a new platform means one new file
-- **Singleton queues** — queue instances are created once at module load and imported wherever needed; workers own no queues except those they produce to
+- **Singleton queues** — queue instances are created once at module load and imported wherever needed
 - **Shared Redis** — one `config/redis.ts` connection backs the job queue, result cache, and rate limiter
 
 ### Tech stack
@@ -189,7 +188,7 @@ backend/src/
 frontend/src/
   pages/           Dashboard, SearchResults, Home, Login, Register, SavedComparisons
   components/      Layout, tracked product modal, UI primitives
-  hooks/           useSearch (polls jobs), useTrackedProducts, useSavedComparisons
+  hooks/           useSearch (polls jobs, 2-min hard stop), useTrackedProducts, useComparisons
   api/             API client functions
 
 tests/load/        k6 load tests (search.js, worker-stress.js)
