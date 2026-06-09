@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import {
@@ -188,6 +188,27 @@ const TrackedProductCard = ({ product, onDelete, onToggleAlert, isDeleting, isUp
   );
 };
 
+interface ProductGroup {
+  label: string;
+  products: TrackedProduct[];
+}
+
+function groupBySearchQuery(products: TrackedProduct[]): ProductGroup[] {
+  const map = new Map<string, TrackedProduct[]>();
+  for (const p of products) {
+    const key = p.searchQuery ?? 'Uncategorized';
+    if (!map.has(key)) map.set(key, []);
+    map.get(key)!.push(p);
+  }
+  // Uncategorized always last
+  const entries = Array.from(map.entries()).sort(([a], [b]) => {
+    if (a === 'Uncategorized') return 1;
+    if (b === 'Uncategorized') return -1;
+    return a.localeCompare(b);
+  });
+  return entries.map(([label, prods]) => ({ label, products: prods }));
+}
+
 export const Dashboard = () => {
   const { dashboard, deleteTrackedProduct, updateAlertSettings } = useTrackedProducts();
 
@@ -209,6 +230,7 @@ export const Dashboard = () => {
   };
 
   const products = dashboard.data?.trackedProducts ?? [];
+  const groups = useMemo(() => groupBySearchQuery(products), [products]);
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] py-10">
@@ -244,16 +266,33 @@ export const Dashboard = () => {
               </Link>
             </motion.div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-              {products.map(product => (
-                <TrackedProductCard
-                  key={product.id}
-                  product={product}
-                  onDelete={handleDelete}
-                  onToggleAlert={handleToggleAlert}
-                  isDeleting={deleteTrackedProduct.isPending}
-                  isUpdating={updateAlertSettings.isPending}
-                />
+            <div className="flex flex-col gap-10">
+              {groups.map((group, gi) => (
+                <motion.section
+                  key={group.label}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: gi * 0.05 }}
+                >
+                  <h2 className="text-base font-semibold text-slate-300 mb-4 pb-2 border-b border-[#1a1a1a] line-clamp-1">
+                    {group.label}
+                    <span className="ml-2 text-xs font-normal text-slate-600">
+                      {group.products.length} product{group.products.length !== 1 ? 's' : ''}
+                    </span>
+                  </h2>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    {group.products.map(product => (
+                      <TrackedProductCard
+                        key={product.id}
+                        product={product}
+                        onDelete={handleDelete}
+                        onToggleAlert={handleToggleAlert}
+                        isDeleting={deleteTrackedProduct.isPending}
+                        isUpdating={updateAlertSettings.isPending}
+                      />
+                    ))}
+                  </div>
+                </motion.section>
               ))}
             </div>
           )}
