@@ -120,7 +120,7 @@ const TrackedProductCard = ({ product, onDelete, onToggleAlert, isDeleting, isUp
               <Tooltip
                 contentStyle={{ background: '#161616', border: '1px solid #262626', borderRadius: 8, fontSize: 12 }}
                 labelStyle={{ color: '#94a3b8' }}
-                formatter={(v: number) => [`${currency} ${formatPrice(v)}`, 'Price']}
+                formatter={(v: number | undefined) => [`${currency} ${formatPrice(v ?? 0)}`, 'Price']}
               />
               <Line type="monotone" dataKey="price" stroke="#1edc6a" strokeWidth={2} dot={{ r: 3, fill: '#1edc6a' }} activeDot={{ r: 5 }} />
             </LineChart>
