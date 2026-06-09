@@ -29,6 +29,7 @@ const envSchema = z.object({
   GMAIL_USER: z.string().optional(),
   GMAIL_APP_PASSWORD: z.string().optional(),
   DISABLE_RATE_LIMIT: z.string().optional(),
+  SENTRY_DSN: z.string().url().optional(),
 });
 
 // Validate environment variables
