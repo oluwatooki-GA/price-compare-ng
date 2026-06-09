@@ -1,4 +1,4 @@
-import { PrismaClient, PriceHistory } from '@prisma/client';
+import { PriceHistory } from '@prisma/client';
 import { Repository } from './base/Repository';
 import { IPriceHistoryRepository } from '../interfaces/IPriceHistoryRepository';
 

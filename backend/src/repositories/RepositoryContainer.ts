@@ -9,7 +9,6 @@ import { TrackedPriceHistoryRepository } from './TrackedPriceHistoryRepository';
 export class RepositoryContainer {
   private static instance: RepositoryContainer;
 
-  private prisma: PrismaClient;
   private userRepository: UserRepository;
   private savedComparisonRepository: SavedComparisonRepository;
   private priceHistoryRepository: PriceHistoryRepository;
@@ -18,7 +17,6 @@ export class RepositoryContainer {
   private trackedPriceHistoryRepository: TrackedPriceHistoryRepository;
 
   private constructor(prisma: PrismaClient) {
-    this.prisma = prisma;
     this.userRepository = new UserRepository(prisma);
     this.savedComparisonRepository = new SavedComparisonRepository(prisma);
     this.priceHistoryRepository = new PriceHistoryRepository(prisma);

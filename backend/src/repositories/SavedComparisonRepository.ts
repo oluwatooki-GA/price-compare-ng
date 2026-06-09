@@ -1,4 +1,4 @@
-import { PrismaClient, SavedComparison } from '@prisma/client';
+import { SavedComparison } from '@prisma/client';
 import { Repository } from './base/Repository';
 import { ISavedComparisonRepository } from '../interfaces/ISavedComparisonRepository';
 

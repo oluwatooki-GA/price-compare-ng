@@ -5,6 +5,7 @@ import { PrismaClient } from '@prisma/client';
  * All repositories should extend this class
  */
 export abstract class Repository<T> {
+  protected readonly _phantom?: T;
   protected prisma: PrismaClient;
 
   constructor(prisma: PrismaClient) {
