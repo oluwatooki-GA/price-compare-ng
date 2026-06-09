@@ -1,7 +1,12 @@
 import 'dotenv/config';
+import { initSentry, Sentry } from './config/sentry';
+initSentry('worker');
+
 import { Worker } from 'bullmq';
 import { prisma } from './config/database';
 import { redisClient, connectRedis } from './config/redis';
+import { logger } from './config/logger';
+import { jobDuration } from './config/metrics';
 import { ScraperRegistry } from './scrapers/registry';
 import { JumiaScraper } from './scrapers/jumia';
 import { JijiScraper } from './scrapers/jiji';
@@ -38,42 +43,43 @@ async function startWorker(): Promise<void> {
   const worker = new Worker<ScrapeQueueData>(
     'scrape',
     async (job) => {
-      if (job.name === 'price-check') {
-        const { trackedProductId } = job.data as PriceCheckJobData;
-        console.log(`[worker] Price-check job for trackedProduct ${trackedProductId}`);
-        const alertData = await priceCheckService.checkPrice(trackedProductId);
-        if (alertData) {
-          await notificationQueue.add('price-alert', alertData);
+      const jobLog = logger.child({ jobId: job.id, jobName: job.name });
+      const endTimer = jobDuration.startTimer({ job_name: job.name });
+
+      try {
+        if (job.name === 'price-check') {
+          const { trackedProductId } = job.data as PriceCheckJobData;
+          jobLog.info({ trackedProductId }, 'Price-check started');
+          const alertData = await priceCheckService.checkPrice(trackedProductId);
+          if (alertData) await notificationQueue.add('price-alert', alertData);
+          endTimer({ status: 'success' });
+          jobLog.info({ trackedProductId }, 'Price-check complete');
+          return;
         }
-        console.log(`[worker] Price-check complete for trackedProduct ${trackedProductId}`);
-        return;
+
+        const { jobDbId, query, queryType, filters } = job.data as ScrapeJobData;
+        jobLog.info({ jobDbId, queryType, query }, 'Scrape job started');
+
+        await prisma.scrapeJob.update({
+          where: { id: jobDbId },
+          data: { status: 'RUNNING', attempts: { increment: 1 } },
+        });
+
+        const results = queryType === 'keyword'
+          ? await scraperService.searchByKeyword(query, filters)
+          : [await scraperService.searchByUrl(query)];
+
+        await prisma.scrapeJob.update({
+          where: { id: jobDbId },
+          data: { status: 'COMPLETED', results: results as never, completedAt: new Date() },
+        });
+
+        endTimer({ status: 'success' });
+        jobLog.info({ jobDbId, resultCount: results.length }, 'Scrape job complete');
+      } catch (err) {
+        endTimer({ status: 'error' });
+        throw err;
       }
-
-      const { jobDbId, query, queryType, filters } = job.data as ScrapeJobData;
-
-      await prisma.scrapeJob.update({
-        where: { id: jobDbId },
-        data: { status: 'RUNNING', attempts: { increment: 1 } },
-      });
-
-      let results;
-      if (queryType === 'keyword') {
-        results = await scraperService.searchByKeyword(query, filters);
-      } else {
-        results = [await scraperService.searchByUrl(query)];
-      }
-
-      await prisma.scrapeJob.update({
-        where: { id: jobDbId },
-        data: {
-          status: 'COMPLETED',
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          results: results as any,
-          completedAt: new Date(),
-        },
-      });
-
-      console.log(`[worker] Job ${jobDbId} completed — ${results.length} result(s)`);
     },
     {
       connection: { ...bullmqConnection, maxRetriesPerRequest: null as unknown as number },
@@ -83,23 +89,26 @@ async function startWorker(): Promise<void> {
 
   worker.on('failed', async (job, err) => {
     if (!job) return;
+    Sentry.captureException(err, { tags: { jobName: job.name, jobId: job.id } });
+
     if (job.name === 'price-check') {
       const { trackedProductId } = job.data as PriceCheckJobData;
-      console.error(`[worker] Price-check job for trackedProduct ${trackedProductId} failed:`, err.message);
+      logger.error({ trackedProductId, err: err.message }, 'Price-check job failed');
       return;
     }
+
     const maxAttempts = job.opts.attempts ?? 1;
     if (job.attemptsMade >= maxAttempts) {
       const { jobDbId } = job.data as ScrapeJobData;
-      console.error(`[worker] Job ${jobDbId} permanently failed:`, err.message);
+      logger.error({ jobDbId, err: err.message }, 'Scrape job permanently failed');
       await prisma.scrapeJob
         .update({ where: { id: jobDbId }, data: { status: 'FAILED', error: err.message } })
-        .catch(console.error);
+        .catch(e => logger.error({ err: e }, 'Failed to mark job as failed'));
     }
   });
 
-  worker.on('error', err => console.error('[worker] Worker error:', err));
-  console.log('[worker] Started — waiting for scrape and price-check jobs...');
+  worker.on('error', err => logger.error({ err }, 'Worker error'));
+  logger.info('Worker started — waiting for scrape and price-check jobs');
 
   const shutdown = async () => {
     await worker.close();
@@ -112,6 +121,6 @@ async function startWorker(): Promise<void> {
 }
 
 startWorker().catch(err => {
-  console.error('[worker] Fatal startup error:', err);
+  logger.error({ err }, 'Fatal worker startup error');
   process.exit(1);
 });

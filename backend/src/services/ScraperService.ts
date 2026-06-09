@@ -4,6 +4,8 @@ import { NormalizationService, ComparisonResult } from '../api/v1/search/normali
 import { ValidationError, ScrapingError } from '../shared/errors';
 import { createClient } from 'redis';
 import { config } from '../config/env';
+import { logger } from '../config/logger';
+import { scrapeDuration } from '../config/metrics';
 
 export interface UrlValidationResult {
     isValid: boolean;
@@ -38,14 +40,14 @@ export class ScraperService {
         }
         try {
             this.redisClient = createClient({ url: config.REDIS_URL });
-            this.redisClient.on('error', (err) => console.error('Redis cache error:', err));
+            this.redisClient.on('error', (err) => logger.error({ err }, 'Redis cache error'));
             if (!this.redisClient.isOpen) {
                 await this.redisClient.connect();
             }
             this._ownClient = true;
-            console.log('Redis cache connected');
+            logger.debug('Redis cache connected');
         } catch (error) {
-            console.warn('Failed to connect to Redis for caching:', error);
+            logger.warn({ err: error }, 'Failed to connect to Redis for caching');
             this.redisClient = null;
         }
     }
@@ -86,7 +88,7 @@ export class ScraperService {
         const cacheKey = `search:keyword:${normalizedKeyword.toLowerCase()}:${filterKey}`;
         const cachedResult = await this.getCachedResult(cacheKey);
         if (cachedResult) {
-            console.log(`Cache hit for keyword: "${normalizedKeyword}"`);
+            logger.debug({ keyword: normalizedKeyword }, 'Cache hit for keyword search');
             return cachedResult;
         }
 
@@ -99,6 +101,7 @@ export class ScraperService {
         }
 
         const searchPromises = scrapers.map(async (scraper) => {
+            const endTimer = scrapeDuration.startTimer({ platform: scraper.platformName });
             try {
                 const scraperFilters: SearchFilters = {
                     minPrice: filters.minPrice,
@@ -109,10 +112,12 @@ export class ScraperService {
                     scraper.searchProducts(normalizedKeyword, filters.limit ?? 10, scraperFilters),
                     scraper.platformName,
                 );
-                console.log(`${scraper.platformName} returned ${results.length} products`);
+                endTimer({ status: 'success' });
+                logger.debug({ platform: scraper.platformName, count: results.length }, 'Scrape complete');
                 return results;
             } catch (error) {
-                console.error(`Failed to search ${scraper.platformName}:`, error instanceof Error ? error.message : String(error));
+                endTimer({ status: 'error' });
+                logger.warn({ platform: scraper.platformName, err: error instanceof Error ? error.message : String(error) }, 'Scrape failed');
                 return [];
             }
         });
@@ -207,7 +212,7 @@ export class ScraperService {
             const cached = await this.redisClient.get(cacheKey);
             if (cached) return JSON.parse(cached) as ComparisonResult[];
         } catch (error) {
-            console.error('Cache get error:', error);
+            logger.error({ err: error }, 'Cache get error');
         }
         return null;
     }

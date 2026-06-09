@@ -1,6 +1,10 @@
 import 'dotenv/config';
+import { initSentry, Sentry } from '../config/sentry';
+initSentry('notification-worker');
+
 import { Worker } from 'bullmq';
 import { connectRedis } from '../config/redis';
+import { logger } from '../config/logger';
 import { bullmqConnection } from '../queue';
 import { AlertEmailService } from '../services/AlertEmailService';
 import type { AlertJobData } from '../queue/types';
@@ -13,8 +17,9 @@ async function startNotificationWorker(): Promise<void> {
   const worker = new Worker<AlertJobData>(
     'notification',
     async (job) => {
-      console.log(`[notification-worker] Sending price alert to ${job.data.userEmail} for product ${job.data.trackedProductId}`);
+      logger.info({ jobId: job.id, trackedProductId: job.data.trackedProductId, userEmail: job.data.userEmail }, 'Sending price alert');
       await alertEmailService.sendPriceAlert(job.data);
+      logger.info({ jobId: job.id }, 'Price alert sent');
     },
     {
       connection: { ...bullmqConnection, maxRetriesPerRequest: null as unknown as number },
@@ -23,11 +28,12 @@ async function startNotificationWorker(): Promise<void> {
   );
 
   worker.on('failed', (job, err) => {
-    console.error(`[notification-worker] Failed job ${job?.id}:`, err.message);
+    Sentry.captureException(err, { tags: { jobId: job?.id } });
+    logger.error({ jobId: job?.id, err: err.message }, 'Notification job failed');
   });
 
-  worker.on('error', err => console.error('[notification-worker] Worker error:', err));
-  console.log('[notification-worker] Started — waiting for alert jobs...');
+  worker.on('error', err => logger.error({ err }, 'Notification worker error'));
+  logger.info('Notification worker started — waiting for alert jobs');
 
   const shutdown = async () => {
     await worker.close();
@@ -39,6 +45,6 @@ async function startNotificationWorker(): Promise<void> {
 }
 
 startNotificationWorker().catch(err => {
-  console.error('[notification-worker] Fatal startup error:', err);
+  logger.error({ err }, 'Fatal notification-worker startup error');
   process.exit(1);
 });

@@ -2,6 +2,7 @@ import 'dotenv/config';
 import { Worker, Queue } from 'bullmq';
 import { prisma } from '../config/database';
 import { connectRedis } from '../config/redis';
+import { logger } from '../config/logger';
 import { bullmqConnection, scrapeQueue } from '../queue';
 import { TrackedProductRepository } from '../repositories/TrackedProductRepository';
 import type { PriceCheckJobData } from '../queue/types';
@@ -39,7 +40,7 @@ async function startScheduler(): Promise<void> {
   const worker = new Worker(
     'scheduler',
     async () => {
-      console.log('[scheduler] Tick — queuing price-check jobs for all active tracked products');
+      logger.info('Scheduler tick — queuing price-check jobs for all active tracked products');
 
       const total = await trackedProductRepository.countActive();
       let offset = 0;
@@ -67,15 +68,15 @@ async function startScheduler(): Promise<void> {
         if (offset < total) await sleep(BATCH_DELAY_MS);
       }
 
-      console.log(`[scheduler] Queued ${queued} price-check job(s)`);
+      logger.info({ queued }, 'Scheduler tick complete');
     },
     {
       connection: { ...bullmqConnection, maxRetriesPerRequest: null as unknown as number },
     },
   );
 
-  worker.on('error', err => console.error('[scheduler] Worker error:', err));
-  console.log('[scheduler] Started — will queue price checks every 3 days');
+  worker.on('error', err => logger.error({ err }, 'Scheduler worker error'));
+  logger.info('Scheduler started — will queue price checks every 3 days');
 
   const shutdown = async () => {
     await worker.close();
@@ -90,6 +91,6 @@ async function startScheduler(): Promise<void> {
 }
 
 startScheduler().catch(err => {
-  console.error('[scheduler] Fatal startup error:', err);
+  logger.error({ err }, 'Fatal scheduler startup error');
   process.exit(1);
 });
