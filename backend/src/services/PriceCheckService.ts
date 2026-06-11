@@ -3,6 +3,7 @@ import { TrackedProductRepository } from '../repositories/TrackedProductReposito
 import { TrackedPriceHistoryRepository } from '../repositories/TrackedPriceHistoryRepository';
 import { UserRepository } from '../repositories/UserRepository';
 import type { AlertJobData } from '../queue/types';
+import { logger } from '../config/logger';
 
 export class PriceCheckService {
   constructor(
@@ -18,7 +19,7 @@ export class PriceCheckService {
 
     const scraper = this.scraperRegistry.getScraperByPlatform(tracked.platform);
     if (!scraper) {
-      console.warn(`[PriceCheckService] No scraper for platform: ${tracked.platform}`);
+      logger.warn({ platform: tracked.platform }, 'No scraper for platform');
       return null;
     }
 
@@ -26,7 +27,7 @@ export class PriceCheckService {
     try {
       product = await scraper.getProductByUrl(tracked.productUrl);
     } catch (err) {
-      console.error(`[PriceCheckService] Failed to scrape ${tracked.productUrl}:`, err instanceof Error ? err.message : String(err));
+      logger.error({ productUrl: tracked.productUrl, err }, 'Failed to scrape product URL');
       await this.trackedProductRepository.update(tracked.id, { lastCheckedAt: new Date() });
       return null;
     }

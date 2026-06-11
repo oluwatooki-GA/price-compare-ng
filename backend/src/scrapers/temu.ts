@@ -1,8 +1,7 @@
-// import * as cheerio from 'cheerio'; // TODO: Re-enable when Temu scraper is implemented
 import { ScraperAdapter, ProductData, SearchFilters } from './base';
 import axios, { AxiosError } from 'axios';
-// import { RateLimiter, DEFAULT_RATE_LIMIT_CONFIG } from './utils'; // TODO: Re-enable when Temu scraper is implemented
 import { ScrapingError } from '../shared/errors';
+import { logger } from '../config/logger';
 
 /**
  * TemuScraper
@@ -84,10 +83,7 @@ export class TemuScraper extends ScraperAdapter {
         [];
 
       if (!Array.isArray(goodsList) || goodsList.length === 0) {
-        console.warn(
-          `Temu API returned 0 results for "${keyword}". ` +
-          'The endpoint or payload may have changed — inspect a live XHR request to verify.',
-        );
+        logger.warn({ keyword }, 'Temu API returned 0 results — endpoint or payload may have changed');
         return [];
       }
 

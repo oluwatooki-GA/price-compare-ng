@@ -1,6 +1,7 @@
 import nodemailer from 'nodemailer';
 import { config } from '../config/env';
 import type { AlertJobData } from '../queue/types';
+import { logger } from '../config/logger';
 
 export class AlertEmailService {
   private transporter: nodemailer.Transporter | null = null;
@@ -15,13 +16,13 @@ export class AlertEmailService {
         },
       });
     } else {
-      console.warn('[AlertEmailService] Gmail credentials not configured — email alerts disabled');
+      logger.warn('Gmail credentials not configured — email alerts disabled');
     }
   }
 
   async sendPriceAlert(data: AlertJobData): Promise<void> {
     if (!this.transporter) {
-      console.warn(`[AlertEmailService] Skipping alert email for ${data.userEmail} (no credentials)`);
+      logger.warn({ userEmail: data.userEmail }, 'Skipping alert email — no credentials');
       return;
     }
 
@@ -35,7 +36,7 @@ export class AlertEmailService {
       html,
     });
 
-    console.log(`[AlertEmailService] Sent price alert to ${data.userEmail} for product ${data.trackedProductId}`);
+    logger.info({ userEmail: data.userEmail, trackedProductId: data.trackedProductId }, 'Price alert sent');
   }
 
   private buildEmailHtml(data: AlertJobData): string {

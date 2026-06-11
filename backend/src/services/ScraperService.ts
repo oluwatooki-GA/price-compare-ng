@@ -35,7 +35,7 @@ export class ScraperService {
     async connect(): Promise<void> {
         if (this.redisClient) return;
         if (!config.REDIS_URL) {
-            console.log('Redis URL not configured, caching disabled');
+            logger.warn('Redis URL not configured, caching disabled');
             return;
         }
         try {
@@ -131,7 +131,7 @@ export class ScraperService {
 
         if (filteredProducts.length === 0) return [];
 
-        let comparisonResults = this.normalizationService.groupSimilarProducts(filteredProducts, normalizedKeyword);
+        let comparisonResults = this.normalizationService.groupSimilarProducts(filteredProducts);
 
         if (filters.sortBy) {
             comparisonResults = this.sortComparisonResults(comparisonResults, filters.sortBy);
@@ -176,7 +176,7 @@ export class ScraperService {
 
         const similarProducts = (await Promise.all(searchPromises)).flat();
         const allProducts = [mainProduct, ...similarProducts];
-        const comparisonResults = this.normalizationService.groupSimilarProducts(allProducts, mainProduct.name);
+        const comparisonResults = this.normalizationService.groupSimilarProducts(allProducts);
 
         let mainComparison = comparisonResults.find(r => r.products.some(p => p.url === mainProduct.url));
         if (!mainComparison) {
@@ -222,7 +222,7 @@ export class ScraperService {
         try {
             await this.redisClient.setEx(cacheKey, this.CACHE_TTL_SEC, JSON.stringify(results));
         } catch (error) {
-            console.error('Cache set error:', error);
+            logger.error({ err: error }, 'Cache set error');
         }
     }
 

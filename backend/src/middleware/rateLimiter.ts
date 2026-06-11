@@ -2,6 +2,7 @@ import rateLimit from 'express-rate-limit';
 import RedisStore from 'rate-limit-redis';
 import { RequestHandler } from 'express';
 import { redisClient } from '../config/redis';
+import { logger } from '../config/logger';
 
 // When DISABLE_RATE_LIMIT=true, limiters become pass-throughs. Intended ONLY
 // for load testing from a single IP — never enable this in production.
@@ -16,7 +17,7 @@ const realUnauthenticatedLimiter = rateLimit({
   standardHeaders: 'draft-7',
   legacyHeaders: false,
   handler: (req, res) => {
-    console.warn(`Rate limit exceeded for IP: ${req.ip}`);
+    logger.warn({ ip: req.ip }, 'Rate limit exceeded');
     res.status(429).json({
       error: 'rate_limit_exceeded',
       message: 'Too many requests from this IP, please try again later.',
@@ -37,7 +38,7 @@ const realAuthenticatedLimiter = rateLimit({
   handler: (req, res) => {
     // @ts-expect-error - user is added by auth middleware
     const identifier = req.user?.id || req.ip;
-    console.warn(`Rate limit exceeded for user/IP: ${identifier}`);
+    logger.warn({ identifier }, 'Rate limit exceeded');
     res.status(429).json({
       error: 'rate_limit_exceeded',
       message: 'Too many requests, please try again later.',
@@ -55,7 +56,7 @@ export const authenticatedLimiter: RequestHandler = RATE_LIMIT_DISABLED
 
 export function enableRedisRateLimiting(): void {
   if (RATE_LIMIT_DISABLED) {
-    console.warn('⚠️  Rate limiting DISABLED via DISABLE_RATE_LIMIT — do not use in production');
+    logger.warn('Rate limiting DISABLED via DISABLE_RATE_LIMIT — do not use in production');
     return;
   }
   if (!redisClient) return;
@@ -64,7 +65,7 @@ export function enableRedisRateLimiting(): void {
   });
   (realUnauthenticatedLimiter as unknown as { store: unknown }).store = store;
   (realAuthenticatedLimiter  as unknown as { store: unknown }).store = store;
-  console.log('Redis rate limiting enabled');
+  logger.info('Redis rate limiting enabled');
 }
 
 export function getRedisClient() {

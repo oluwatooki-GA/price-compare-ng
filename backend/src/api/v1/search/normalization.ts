@@ -1,10 +1,5 @@
-/**
- * Normalization Service
- *
- * Handles product similarity calculation, grouping, and best value identification.
- */
-
 import { ProductData } from '../../../scrapers/base';
+import { logger } from '../../../config/logger';
 
 export interface ComparisonResult {
   products: ProductData[];
@@ -14,76 +9,30 @@ export interface ComparisonResult {
 }
 
 export class NormalizationService {
-  // Minimum Jaccard similarity for two products to be grouped together.
-  // 0.55 is tight enough to avoid cross-category false positives (e.g. a power
-  // bank matching a laptop) while still grouping genuine variants of the same
-  // product across platforms.
-  // TODO: Re-enable when product grouping is implemented
-  // private readonly SIMILARITY_THRESHOLD = 0.55;
-
   // A product is an outlier if its price deviates more than this many standard
-  // deviations from the median of all scraped products. Outliers are dropped
-  // before grouping.
+  // deviations from the median of all scraped products.
   private readonly OUTLIER_STDEV_THRESHOLD = 2.0;
 
-
   /**
-   * Calculate Jaccard similarity between two product names.
-   * The search query tokens are stripped from both names before comparison so
-   * that the shared search keyword doesn't artificially inflate similarity
-   * (e.g. "laptop power bank" vs "laptop i7" both containing "laptop").
+   * Remove price outliers from a flat product list, then return each surviving
+   * product as its own ComparisonResult.
    */
-  calculateSimilarity(name1: string, name2: string, searchQuery = ''): number {
-    const queryTokens = new Set(this.tokenize(searchQuery));
-
-    const tokens1 = this.tokenize(name1).filter(t => !queryTokens.has(t));
-    const tokens2 = this.tokenize(name2).filter(t => !queryTokens.has(t));
-
-    // If stripping the query leaves nothing, fall back to the raw tokens so
-    // single-word searches still produce a score.
-    const t1 = tokens1.length > 0 ? tokens1 : this.tokenize(name1);
-    const t2 = tokens2.length > 0 ? tokens2 : this.tokenize(name2);
-
-    const intersection = t1.filter(t => t2.includes(t));
-    const union = [...new Set([...t1, ...t2])];
-
-    if (union.length === 0) return 0;
-    return intersection.length / union.length;
-  }
-
-  /**
-   * Group similar products and remove price outliers within each group.
-   *
-   * @param products    - Flat list of products from all platforms
-   * @param _searchQuery - The original search keyword (unused for now, will be used when grouping is re-enabled)
-   */
-  groupSimilarProducts(products: ProductData[], _searchQuery = ''): ComparisonResult[] {
-    console.log(`\n[NormalizationService] ── filtering ${products.length} products ──`);
-
-    // Step 1: drop price outliers from the flat list.
-    // A product priced below 10% or above 10x the median, or beyond 2σ, is
-    // almost certainly a wrong-category result and is removed entirely.
+  groupSimilarProducts(products: ProductData[]): ComparisonResult[] {
     const { core, outliers } = this.removeOutliers(products);
 
     if (outliers.length > 0) {
-      console.log(`[NormalizationService] Dropped ${outliers.length} price outlier(s):`);
-      outliers.forEach(p =>
-          console.log(`  ✗ [outlier]    "${p.name}" @ ₦${p.price} (${p.platform})`)
+      logger.debug(
+        { count: outliers.length, outliers: outliers.map(p => ({ name: p.name, price: p.price, platform: p.platform })) },
+        'Price outliers removed',
       );
-    } else {
-      console.log(`[NormalizationService] No price outliers dropped`);
     }
 
-    console.log(`[NormalizationService] ${products.length} in → ${outliers.length} outliers removed → ${core.length} remaining`);
-
-    // Step 3: return each surviving product as its own ComparisonResult.
-    // Similarity-based grouping is intentionally not applied here — each
-    // product stands alone so the caller receives a flat, clean list.
+    logger.debug({ total: products.length, removed: outliers.length, remaining: core.length }, 'Normalization complete');
 
     return core.map(product => ({
       products: [product],
       bestValueIndex: 0,
-      searchQuery: '',   // set by SearchService
+      searchQuery: '',
       timestamp: new Date(),
     }));
   }
@@ -93,9 +42,7 @@ export class NormalizationService {
    * Priority: lowest price → highest rating → most reviews.
    */
   identifyBestValue(products: ProductData[]): ProductData {
-    if (products.length === 0) {
-      throw new Error('Cannot identify best value from empty product list');
-    }
+    if (products.length === 0) throw new Error('Cannot identify best value from empty product list');
     if (products.length === 1) return products[0];
 
     const available = products.filter(p => p.availability);
@@ -115,28 +62,15 @@ export class NormalizationService {
 
   // ── Private helpers ─────────────────────────────────────────────────────
 
-  /**
-   * Split a group into core (non-outlier) products and outliers.
-   *
-   * A product is an outlier if its price is more than OUTLIER_STDEV_THRESHOLD
-   * standard deviations from the group median. Groups of 1–2 products are
-   * never split (not enough data for a meaningful stdev).
-   */
-  private removeOutliers(products: ProductData[]): {
-    core: ProductData[];
-    outliers: ProductData[];
-  } {
+  private removeOutliers(products: ProductData[]): { core: ProductData[]; outliers: ProductData[] } {
     if (products.length < 2) return { core: products, outliers: [] };
 
     const prices = products.map(p => p.price);
     const median = this.median(prices);
     const stdev = this.stdev(prices);
 
-    // With only 2-3 products stdev can be skewed by the outlier itself, so we
-    // use a minimum floor: any product priced less than 10% of the median or
-    // more than 10x the median is always an outlier regardless of stdev.
-    const FLOOR_RATIO = 0.10;   // below 10% of median → outlier
-    const CEILING_RATIO = 10.0; // above 10x median   → outlier
+    const FLOOR_RATIO = 0.10;
+    const CEILING_RATIO = 10.0;
 
     const core: ProductData[] = [];
     const outliers: ProductData[] = [];
@@ -146,19 +80,11 @@ export class NormalizationService {
       const zScore = stdev > 0 ? Math.abs(product.price - median) / stdev : 0;
 
       const isOutlier =
-          ratio < FLOOR_RATIO ||
-          ratio > CEILING_RATIO ||
-          (stdev > 0 && zScore > this.OUTLIER_STDEV_THRESHOLD);
+        ratio < FLOOR_RATIO ||
+        ratio > CEILING_RATIO ||
+        (stdev > 0 && zScore > this.OUTLIER_STDEV_THRESHOLD);
 
-      if (isOutlier) {
-        console.log(
-            `  Outlier removed: "${product.name}" @ ₦${product.price} ` +
-            `(ratio=${ratio.toFixed(2)}x median ₦${median.toFixed(0)}, z=${zScore.toFixed(2)})`
-        );
-        outliers.push(product);
-      } else {
-        core.push(product);
-      }
+      (isOutlier ? outliers : core).push(product);
     }
 
     // Safety: if everything was flagged, keep them all
@@ -167,13 +93,12 @@ export class NormalizationService {
     return { core, outliers };
   }
 
-
   private median(values: number[]): number {
     const sorted = [...values].sort((a, b) => a - b);
     const mid = Math.floor(sorted.length / 2);
     return sorted.length % 2 !== 0
-        ? sorted[mid]
-        : (sorted[mid - 1] + sorted[mid]) / 2;
+      ? sorted[mid]
+      : (sorted[mid - 1] + sorted[mid]) / 2;
   }
 
   private stdev(values: number[]): number {
@@ -182,29 +107,24 @@ export class NormalizationService {
     return Math.sqrt(variance);
   }
 
-  /**
-   * Tokenize a product name into normalised, deduplicated tokens.
-   * Removes stop words and normalises common product term variants.
-   */
   private tokenize(name: string): string[] {
     const stopWords = new Set([
       'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
       'of', 'with', 'by', 'from', 'as', 'is', 'was', 'are', 'were', 'been',
       'be', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would',
       'should', 'could', 'may', 'might', 'must', 'can', 'plus', 'extra',
-      'free', 'new', 'original', 'official', 'genuine', 'brand','old'
+      'free', 'new', 'original', 'official', 'genuine', 'brand', 'old',
     ]);
 
     const tokens = name
-        .toLowerCase()
-        .split(/[^a-z0-9]+/)
-        .filter(t => t.length > 0 && !stopWords.has(t))
-        .map(t => {
-          // Normalise storage unit variants so "256gb" and "256gigabytes" match
-          if (/^(gb|gigabyte|gigabytes)$/.test(t)) return 'gb';
-          if (/^(tb|terabyte|terabytes)$/.test(t)) return 'tb';
-          return t;
-        });
+      .toLowerCase()
+      .split(/[^a-z0-9]+/)
+      .filter(t => t.length > 0 && !stopWords.has(t))
+      .map(t => {
+        if (/^(gb|gigabyte|gigabytes)$/.test(t)) return 'gb';
+        if (/^(tb|terabyte|terabytes)$/.test(t)) return 'tb';
+        return t;
+      });
 
     return [...new Set(tokens)];
   }

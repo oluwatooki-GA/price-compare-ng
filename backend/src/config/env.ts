@@ -39,8 +39,8 @@ function validateEnv() {
   } catch (error) {
     if (error instanceof z.ZodError) {
       const missingVars = error.errors.map(err => `${err.path.join('.')}: ${err.message}`);
-      console.error('❌ Environment validation failed:');
-      missingVars.forEach(msg => console.error(`  - ${msg}`));
+      // Use process.stderr directly — logger depends on env, so it isn't available yet
+      process.stderr.write(`Environment validation failed:\n${missingVars.map(m => `  - ${m}`).join('\n')}\n`);
       process.exit(1);
     }
     throw error;

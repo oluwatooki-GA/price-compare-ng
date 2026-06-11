@@ -3,6 +3,7 @@ import { ScraperAdapter, ProductData, SearchFilters } from './base';
 import axios, { AxiosError } from 'axios';
 import { RateLimiter, fetchWithRetry, DEFAULT_RATE_LIMIT_CONFIG } from './utils';
 import { ScrapingError } from '../shared/errors';
+import { logger } from '../config/logger';
 
 export class JijiScraper extends ScraperAdapter {
   private rateLimiter: RateLimiter;
@@ -134,9 +135,7 @@ export class JijiScraper extends ScraperAdapter {
       const status = axios.isAxiosError(error)
         ? (error as AxiosError).response?.status
         : undefined;
-      console.error(
-        `Jiji API failed (HTTP ${status ?? 'network error'}), falling back to HTML scraping`,
-      );
+      logger.warn({ status }, 'Jiji API failed, falling back to HTML scraping');
     }
 
     // ── Strategy 2: HTML scraping fallback ─────────────────────────────────
