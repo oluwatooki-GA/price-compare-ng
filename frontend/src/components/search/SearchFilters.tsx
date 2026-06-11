@@ -28,7 +28,7 @@ export const SearchFiltersComponent = ({
   // Local draft - only committed to parent when Apply is clicked
   const [draft, setDraft] = useState<SearchFilters>(filters);
 
-  const updateDraft = (key: keyof SearchFilters, value: any) => {
+  const updateDraft = (key: keyof SearchFilters, value: SearchFilters[keyof SearchFilters]) => {
     setDraft(prev => ({ ...prev, [key]: value }));
   };
 

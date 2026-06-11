@@ -173,12 +173,7 @@ export const UnifiedSearch = () => {
       try {
         const data = await searchByUrl.mutateAsync({ url: trimmedInput });
 
-        let product: any = null;
-        if (data && typeof data === 'object') {
-          if (Array.isArray(data)) product = (data as any[])[0]?.products?.[0];
-          else if ('results' in (data as any)) product = (data as any).results?.[0]?.products?.[0];
-          else if ('products' in (data as any)) product = (data as any).products?.[0];
-        }
+        const product = data[0]?.products?.[0] ?? null;
 
         if (!product?.name) {
           setInputError('Could not extract product data from that URL');

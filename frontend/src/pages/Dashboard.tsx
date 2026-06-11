@@ -229,7 +229,7 @@ export const Dashboard = () => {
     );
   };
 
-  const products = dashboard.data?.trackedProducts ?? [];
+  const products = useMemo(() => dashboard.data?.trackedProducts ?? [], [dashboard.data?.trackedProducts]);
   const groups = useMemo(() => groupBySearchQuery(products), [products]);
 
   return (

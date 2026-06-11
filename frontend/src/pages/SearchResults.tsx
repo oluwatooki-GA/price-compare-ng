@@ -58,7 +58,8 @@ export const SearchResults = () => {
         { onSuccess: (data: ComparisonResult[]) => setResults(data) }
       );
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps - run once on mount
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: run once on mount with URL params
+  }, []);
 
   // Sort the full result set client-side - no backend call
   const sorted = useMemo(() => {

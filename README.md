@@ -93,9 +93,11 @@ notification-worker receives job
 
 ### Tech stack
 
-**Backend:** Express, TypeScript, BullMQ, Prisma, PostgreSQL, Redis, Cheerio
+**Backend:** Express, TypeScript, BullMQ, Prisma, PostgreSQL, Redis, Cheerio, pino, prom-client
 
 **Frontend:** React 19, Vite, TailwindCSS, Framer Motion, TanStack Query
+
+**Observability:** Prometheus, Grafana, Sentry (optional)
 
 **Infrastructure:** Docker, Docker Compose, k6
 
@@ -115,6 +117,8 @@ docker compose up --build
 | http://localhost:3000 | Backend API |
 | http://localhost:3000/api-docs | Swagger docs |
 | http://localhost:3000/admin/queues | Bull Board |
+| http://localhost:9090 | Prometheus |
+| http://localhost:3001 | Grafana (admin / admin) |
 
 Scale the worker to process more jobs concurrently:
 
@@ -135,8 +139,11 @@ docker compose up -d --scale worker=3
 | `notification-worker` | Sends price alert emails |
 | `postgres` | PostgreSQL 17 (port 5432) |
 | `redis` | Redis (port 6379) |
+| `prometheus` | Scrapes `/metrics` every 15s (port 9090) |
+| `grafana` | Dashboards over Prometheus data (port 3001) |
 
 In development the backend runs `prisma db push` on startup. The production Dockerfile runs `prisma migrate deploy` against committed migrations.
+
 
 ---
 
@@ -155,6 +162,9 @@ CORS_ORIGINS=http://localhost:5173
 # Optional — enables price alert emails
 GMAIL_USER=your-address@gmail.com
 GMAIL_APP_PASSWORD=xxxx xxxx xxxx xxxx
+
+# Optional — error tracking (Sentry or GlitchTip DSN)
+SENTRY_DSN=
 
 # Load testing only — bypasses rate limiting
 DISABLE_RATE_LIMIT=false
@@ -181,7 +191,7 @@ backend/src/
   queue/           BullMQ queue singletons and job type definitions
   workers/         scheduler.ts, notification-worker.ts
   middleware/      auth, rate limiting, error handling
-  config/          env, database, redis, security
+  config/          env, database, redis, logger, metrics, sentry
   server.ts        API entry point
   worker.ts        Scrape + price-check worker entry point
 
