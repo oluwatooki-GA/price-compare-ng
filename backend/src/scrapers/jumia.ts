@@ -7,6 +7,7 @@ import * as cheerio from 'cheerio';
 import { ScraperAdapter, ProductData, SearchFilters } from './base';
 import { RateLimiter, fetchWithRetry, DEFAULT_RATE_LIMIT_CONFIG } from './utils';
 import { ScrapingError } from '../shared/errors';
+import { logger } from '../config/logger';
 
 /**
  * Scraper implementation for Jumia.com.ng
@@ -109,7 +110,7 @@ export class JumiaScraper extends ScraperAdapter {
             imageUrl,
           });
         } catch (error) {
-          console.error(`Error parsing Jumia product: ${error}`);
+          logger.warn({ err: error }, 'Error parsing Jumia product element');
         }
         return undefined;
       });

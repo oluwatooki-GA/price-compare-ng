@@ -1,12 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-
-/**
- * Prisma Client singleton instance
- * 
- * This ensures we only create one instance of PrismaClient throughout the application lifecycle.
- * In development, we store the instance on the global object to prevent hot-reloading from
- * creating multiple instances.
- */
+import { logger } from './logger';
 
 declare global {
   // eslint-disable-next-line no-var
@@ -14,7 +7,7 @@ declare global {
 }
 
 export const prisma = global.prisma || new PrismaClient({
-  log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+  log: ['error'],
 });
 
 if (process.env.NODE_ENV !== 'production') {
@@ -34,9 +27,9 @@ export async function disconnectDatabase(): Promise<void> {
 export async function connectDatabase(): Promise<void> {
   try {
     await prisma.$connect();
-    console.log('✓ Database connected successfully');
+    logger.info('Database connected');
   } catch (error) {
-    console.error('✗ Database connection failed:', error);
+    logger.error({ err: error }, 'Database connection failed');
     throw error;
   }
 }

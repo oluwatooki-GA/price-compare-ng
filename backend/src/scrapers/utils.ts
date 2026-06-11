@@ -37,8 +37,8 @@ export interface TimeoutConfig {
  */
 export const DEFAULT_RETRY_CONFIG: RetryConfig = {
   maxAttempts: 3,
-  initialDelayMs: 1000,
-  maxDelayMs: 10000,
+  initialDelayMs: 2000,
+  maxDelayMs: 15000,
   backoffMultiplier: 2,
 };
 
@@ -58,13 +58,33 @@ export const DEFAULT_TIMEOUT_CONFIG: TimeoutConfig = {
   connectionTimeoutMs: 5000,
 };
 
+const USER_AGENTS = [
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15',
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:126.0) Gecko/20100101 Firefox/126.0',
+  'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36 Edg/125.0.0.0',
+];
+
+function randomUserAgent(): string {
+  return USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)];
+}
+
 // Shared HTTP client — one instance for all scraper fetches, keeps connection pool alive
 const sharedHttpClient: AxiosInstance = axios.create({
   timeout: DEFAULT_TIMEOUT_CONFIG.requestTimeoutMs,
   headers: {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-    'Accept-Language': 'en-US,en;q=0.5',
+    'Accept-Language': 'en-US,en;q=0.9',
+    'Accept-Encoding': 'gzip, deflate, br',
+    'Upgrade-Insecure-Requests': '1',
+    'sec-fetch-dest': 'document',
+    'sec-fetch-mode': 'navigate',
+    'sec-fetch-site': 'none',
+    'sec-fetch-user': '?1',
+    'Cache-Control': 'max-age=0',
   },
 });
 
@@ -119,9 +139,10 @@ function isRetryableError(error: unknown): boolean {
     if (axiosError.response && axiosError.response.status >= 500) {
       return true;
     }
-    
-    // 429 Too Many Requests is retryable
-    if (axiosError.response && axiosError.response.status === 429) {
+
+    // 429 Too Many Requests and 403 Forbidden are retryable — both can be
+    // intermittent bot-detection responses that clear on the next attempt
+    if (axiosError.response && (axiosError.response.status === 429 || axiosError.response.status === 403)) {
       return true;
     }
   }
@@ -200,9 +221,16 @@ export async function fetchWithRetry(
 ): Promise<string> {
   await rateLimiter.waitIfNeeded();
 
+  const origin = new URL(url).origin;
+
   return withRetry(async () => {
     try {
-      const response = await sharedHttpClient.get(url);
+      const response = await sharedHttpClient.get(url, {
+        headers: {
+          'User-Agent': randomUserAgent(),
+          'Referer': `${origin}/`,
+        },
+      });
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error)) {
