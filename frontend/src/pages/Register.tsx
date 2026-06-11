@@ -49,8 +49,9 @@ export const Register = () => {
           });
           navigate('/');
         },
-        onError: (error: any) => {
-          const message = error?.userMessage || error?.response?.data?.message || 'Registration failed. Please try again.';
+        onError: (error: unknown) => {
+          const err = error as { userMessage?: string; response?: { data?: { message?: string } } };
+          const message = err?.userMessage || err?.response?.data?.message || 'Registration failed. Please try again.';
           toast.error(message, {
             duration: 4000,
             position: 'top-center',

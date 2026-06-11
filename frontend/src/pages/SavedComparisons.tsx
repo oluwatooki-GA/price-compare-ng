@@ -10,7 +10,7 @@ import { ErrorMessage } from '../components/common/ErrorMessage';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '../components/ui/button';
 import { ArrowLeft, Trash2, Search, BookmarkX, ChevronRight } from 'lucide-react';
-import type { ProductData } from '../types';
+import type { ProductData, ComparisonResult } from '../types';
 
 // ── Group saved comparisons by their searchQuery ──────────────────────────────
 
@@ -18,7 +18,7 @@ interface SavedItem {
   id: number;
   searchQuery: string;
   searchType: string;
-  comparisonData: any;
+  comparisonData: ComparisonResult;
   createdAt: string | Date;
 }
 

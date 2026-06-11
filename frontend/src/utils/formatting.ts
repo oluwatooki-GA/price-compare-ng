@@ -1,13 +1,14 @@
-export const formatError = (error: any): string => {
-  // Default user-friendly message
+type ApiError = { response?: { data?: { message?: string } }; message?: string };
+
+export const formatError = (error: unknown): string => {
   const defaultMessage = 'An error occurred. Please try again later.';
 
-  // If no error object, return default
   if (!error) return defaultMessage;
 
-  // If error has a response from the API
-  if (error.response?.data?.message) {
-    const message = error.response.data.message;
+  const err = error as ApiError;
+
+  if (err.response?.data?.message) {
+    const message = err.response.data.message;
     
     // Sanitize technical details
     const sanitized = message
@@ -21,14 +22,12 @@ export const formatError = (error: any): string => {
     return sanitized || defaultMessage;
   }
 
-  // If error has a message property
-  if (error.message) {
-    // Don't expose network errors in detail
-    if (error.message.includes('Network Error')) {
+  if (err.message) {
+    if (err.message.includes('Network Error')) {
       return 'Unable to connect to the server. Please check your internet connection.';
     }
     
-    if (error.message.includes('timeout')) {
+    if (err.message.includes('timeout')) {
       return 'Request timed out. Please try again.';
     }
     

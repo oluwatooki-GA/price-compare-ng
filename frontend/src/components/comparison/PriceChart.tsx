@@ -11,7 +11,8 @@ interface PriceChartProps {
 }
 
 // TODO: Re-enable when price history feature is implemented
-export const PriceChart = (_: PriceChartProps) => {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const PriceChart = (_props: PriceChartProps) => {
   // Disabled for now - will be re-enabled when price history feature is implemented
   return null;
 

@@ -43,8 +43,9 @@ export const Login = () => {
         });
         navigate('/');
       },
-      onError: (error: any) => {
-        const message = error?.userMessage || error?.response?.data?.message || 'Invalid email or password';
+      onError: (error: unknown) => {
+        const err = error as { userMessage?: string; response?: { data?: { message?: string } } };
+        const message = err?.userMessage || err?.response?.data?.message || 'Invalid email or password';
         toast.error(message, {
           duration: 4000,
           position: 'top-center',

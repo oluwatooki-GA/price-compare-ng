@@ -126,11 +126,12 @@ export const SearchResults = () => {
           if (productUrl) setSavedUrls(prev => new Set(prev).add(productUrl));
           toast.success(productName ? `Saved: ${productName.slice(0, 40)}…` : 'Saved!');
         },
-        onError: (error: any) => {
-          if (error.response?.status === 400 && error.response?.data?.message?.includes('limit')) {
+        onError: (error: unknown) => {
+          const err = error as { response?: { status?: number; data?: { message?: string } } };
+          if (err.response?.status === 400 && err.response?.data?.message?.includes('limit')) {
             toast.error('Limit reached - max 50 saved comparisons');
           } else {
-            toast.error(error.response?.data?.message ?? 'Failed to save, please try again');
+            toast.error(err.response?.data?.message ?? 'Failed to save, please try again');
           }
         },
       }
