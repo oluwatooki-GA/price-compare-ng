@@ -107,25 +107,5 @@ export class NormalizationService {
     return Math.sqrt(variance);
   }
 
-  private tokenize(name: string): string[] {
-    const stopWords = new Set([
-      'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
-      'of', 'with', 'by', 'from', 'as', 'is', 'was', 'are', 'were', 'been',
-      'be', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would',
-      'should', 'could', 'may', 'might', 'must', 'can', 'plus', 'extra',
-      'free', 'new', 'original', 'official', 'genuine', 'brand', 'old',
-    ]);
 
-    const tokens = name
-      .toLowerCase()
-      .split(/[^a-z0-9]+/)
-      .filter(t => t.length > 0 && !stopWords.has(t))
-      .map(t => {
-        if (/^(gb|gigabyte|gigabytes)$/.test(t)) return 'gb';
-        if (/^(tb|terabyte|terabytes)$/.test(t)) return 'tb';
-        return t;
-      });
-
-    return [...new Set(tokens)];
-  }
 }
